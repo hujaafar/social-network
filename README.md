@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="#run-common">Run Common</a> ·
+  <a href="docs/USING_COMMON.md">Explore the experience</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="docs/REDESIGN.md">Design &amp; motion</a> ·
   <a href="docs/VALIDATION.md">Validation</a> ·
@@ -33,7 +34,10 @@ The experience pairs electric lime, charcoal and condensed typography with origi
 
 | Your space | What you can do |
 |---|---|
-| **Feed** | Publish moments, upload JPEG/PNG/GIF media, like posts and join conversations. |
+| **Feed** | Switch between the latest posts and accepted follows; open conversations without replacing your feed. |
+| **Saved posts** | Bookmark moments in your own persistent collection; saved posts respect their authors' current audiences. |
+| **Quick search** | Find people, circles and pages from anywhere with Control/Command K, arrow keys and Enter. |
+| **Composer** | Share text and JPEG/PNG/GIF media, drag in an image, choose an audience, and keep your draft while browsing. |
 | **Privacy** | Use public or private profiles and choose public, followers-only or selected-follower post audiences. |
 | **Circles** | Find groups, request membership, invite people, share posts and organize events with RSVP. |
 | **Messages** | Search contacts, send live messages and emoji, and move between contacts and conversations on mobile. |
@@ -111,7 +115,7 @@ go test ./... -count=1
 go vet ./...
 ```
 
-GitHub Actions runs frontend and backend checks separately. Integration journeys cover authentication, posts, uploads, likes, comments, visibility, follows, circle membership, events, RSVP, notifications and live messaging. [The validation record](docs/VALIDATION.md) distinguishes automated checks from browser testing and deployment work.
+GitHub Actions runs frontend and backend checks separately. Integration journeys cover authentication, posts, uploads, likes, comments, saved collections, following feeds, audience changes, Unicode limits, transactional deletion, circle membership, events, RSVP, notifications and live messaging. [The validation record](docs/VALIDATION.md) distinguishes automated checks from browser testing and deployment work.
 
 ## Design notes
 
