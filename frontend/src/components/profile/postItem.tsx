@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { HeartIcon, MessageCircleIcon } from "lucide-react";
 import { Post } from "@/types/post";
 
-
-
 interface PostItemProps {
   post: Post;
 }
@@ -19,11 +17,7 @@ export default function PostItem({ post }: PostItemProps) {
         <h1>ddddddddddd</h1>
         <Avatar>
           <AvatarImage
-            src={
-              post.avatar
-                ? `${API_ORIGIN}/avatars/${post.avatar}`
-                : "/profile.png"
-            }
+            src={post.avatar ? `${API_ORIGIN}/avatars/${post.avatar}` : "/profile.png"}
             alt={post.nickname}
           />
           <AvatarFallback>{post.nickname}</AvatarFallback>

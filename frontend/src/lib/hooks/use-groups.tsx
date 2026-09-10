@@ -11,11 +11,27 @@ export function useGroups() {
   const refreshGroups = useCallback(async () => {
     setError("");
     try {
-      const [all, joined] = await Promise.all([fetcher(apiUrl("/groups")), fetcher(apiUrl("/groups/user"))]);
-      setGroups(Array.isArray(all) ? all : []); setJoinedGroups(Array.isArray(joined) ? joined : []);
-    } catch { setError("We couldn’t load the circles. Please try again."); }
-    finally { setIsLoading(false); }
+      const [all, joined] = await Promise.all([
+        fetcher(apiUrl("/groups")),
+        fetcher(apiUrl("/groups/user")),
+      ]);
+      setGroups(Array.isArray(all) ? all : []);
+      setJoinedGroups(Array.isArray(joined) ? joined : []);
+    } catch {
+      setError("We couldn’t load the circles. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
-  useEffect(() => { refreshGroups(); }, [refreshGroups]);
-  return { groups, joinedGroups, isLoading, error, refreshGroups, refreshJoinedGroups: refreshGroups };
+  useEffect(() => {
+    refreshGroups();
+  }, [refreshGroups]);
+  return {
+    groups,
+    joinedGroups,
+    isLoading,
+    error,
+    refreshGroups,
+    refreshJoinedGroups: refreshGroups,
+  };
 }

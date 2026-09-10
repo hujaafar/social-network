@@ -25,7 +25,10 @@ export function InviteButton({ groupId, onInviteSuccess }: InviteButtonProps) {
   const [open, setOpen] = useState(false);
   const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [alert, setAlert] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
   const handleInvite = async () => {
     if (!nickname.trim()) {
       setAlert({ type: "error", message: "Please enter a nickname." });
@@ -37,7 +40,7 @@ export function InviteButton({ groupId, onInviteSuccess }: InviteButtonProps) {
       const response = await axios.post(
         apiUrl("/groups/invite"),
         { group_id: groupId, nickname },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       console.log(response.data);
       setAlert({ type: "success", message: "Invite sent successfully!" });
@@ -55,8 +58,8 @@ export function InviteButton({ groupId, onInviteSuccess }: InviteButtonProps) {
   };
 
   return (
-   <>
-   {alert && (
+    <>
+      {alert && (
         <Alert
           title={alert.type === "success" ? "Success" : "Error"}
           message={alert.message}
@@ -65,30 +68,30 @@ export function InviteButton({ groupId, onInviteSuccess }: InviteButtonProps) {
           onClose={() => setAlert(null)}
         />
       )}
-     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="bg-[#bc4312] text-white">
-          Invite Member
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>Invite Member</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-4">
-          <Input
-            placeholder="Enter nickname to invite"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-          />
-        </div>
-        <DialogFooter>
-          <Button onClick={handleInvite} disabled={loading}>
-            {loading ? "Inviting..." : "Send Invite"}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" className="bg-[#bc4312] text-white">
+            Invite Member
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-   </>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Invite Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <Input
+              placeholder="Enter nickname to invite"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleInvite} disabled={loading}>
+              {loading ? "Inviting..." : "Send Invite"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

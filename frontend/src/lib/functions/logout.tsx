@@ -9,7 +9,7 @@ export const handleLogout = async (router: AppRouterInstance) => {
       {},
       {
         withCredentials: true,
-      }
+      },
     );
     router.push("/login");
   } catch (error) {

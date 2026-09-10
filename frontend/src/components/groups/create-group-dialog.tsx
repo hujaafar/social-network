@@ -1,7 +1,6 @@
 "use client";
 import { apiUrl } from "@/lib/api";
 
-
 import { useState } from "react";
 import {
   Dialog,
@@ -22,11 +21,7 @@ interface CreateGroupDialogProps {
   refreshGroups: () => void;
 }
 
-export function CreateGroupDialog({
-  open,
-  onOpenChange,
-  refreshGroups,
-}: CreateGroupDialogProps) {
+export function CreateGroupDialog({ open, onOpenChange, refreshGroups }: CreateGroupDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [name, setName] = useState("");
@@ -35,14 +30,11 @@ export function CreateGroupDialog({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isLoading) return;
-    setIsLoading(true); setError("");
+    setIsLoading(true);
+    setError("");
 
     try {
-      await axios.post(
-        apiUrl("/groups/create"),
-        { name, description },
-        { withCredentials: true }
-      );
+      await axios.post(apiUrl("/groups/create"), { name, description }, { withCredentials: true });
       onOpenChange(false);
       setName("");
       setDescription("");
@@ -59,19 +51,12 @@ export function CreateGroupDialog({
       <DialogContent className="post-compose-dialog">
         <DialogHeader>
           <DialogTitle>Start a circle.</DialogTitle>
-          <DialogDescription>
-            Bring people together around something you love.
-          </DialogDescription>
+          <DialogDescription>Bring people together around something you love.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Circle name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
@@ -82,13 +67,13 @@ export function CreateGroupDialog({
               required
             />
           </div>
-          {error && <p role="alert" className="inline-error">{error}</p>}
+          {error && (
+            <p role="alert" className="inline-error">
+              {error}
+            </p>
+          )}
           <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>

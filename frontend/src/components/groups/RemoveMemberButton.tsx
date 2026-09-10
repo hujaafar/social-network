@@ -1,7 +1,6 @@
 "use client";
 import { apiUrl } from "@/lib/api";
 
-
 import React from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -16,11 +15,7 @@ interface RemoveMemberButtonProps {
 
 const MySwal = withReactContent(Swal);
 
-export function RemoveMemberButton({
-  groupId,
-  userId,
-  onRemove,
-}: RemoveMemberButtonProps) {
+export function RemoveMemberButton({ groupId, userId, onRemove }: RemoveMemberButtonProps) {
   const handleRemove = async () => {
     const result = await MySwal.fire({
       title: "Remove Member?",
@@ -36,16 +31,13 @@ export function RemoveMemberButton({
     if (result.isConfirmed) {
       try {
         // Make a DELETE request with { group_id, user_id } in the body
-        const response = await axios.delete(
-          apiUrl("/groups/remove"),
-          {
-            data: {
-              group_id: groupId,
-              user_id: userId,
-            },
-            withCredentials: true,
-          }
-        );
+        const response = await axios.delete(apiUrl("/groups/remove"), {
+          data: {
+            group_id: groupId,
+            user_id: userId,
+          },
+          withCredentials: true,
+        });
 
         // Success alert
         await MySwal.fire({

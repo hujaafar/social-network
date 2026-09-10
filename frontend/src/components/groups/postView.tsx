@@ -2,7 +2,6 @@
 /* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
 import { apiUrl, API_ORIGIN } from "@/lib/api";
 
-
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,14 +42,12 @@ export default function PostView({ post, onClose }: PostViewProps) {
     message: string;
   } | null>(null);
 
-
   const fetchComments = useCallback(async () => {
     setIsLoadingComments(true);
     try {
-      const response = await axios.get(
-        `${API_ORIGIN}/groups/posts/comments?post_id=${post.id}`,
-        { withCredentials: true }
-      );
+      const response = await axios.get(`${API_ORIGIN}/groups/posts/comments?post_id=${post.id}`, {
+        withCredentials: true,
+      });
       setComments(response.data || []);
     } catch (error) {
       console.log("Error fetching comments:", error);
@@ -59,17 +56,18 @@ export default function PostView({ post, onClose }: PostViewProps) {
     }
   }, [post.id]);
 
-  useEffect(() => { fetchComments(); }, [fetchComments]);
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
 
   const handleAddComment = async () => {
-    if (!newComment.trim())
-      return setAlert({ type: "error", message: "Comment cannot be empty." });
+    if (!newComment.trim()) return setAlert({ type: "error", message: "Comment cannot be empty." });
 
     try {
       await axios.post(
         apiUrl("/groups/posts/comments/create"),
         { post_id: post.id, content: newComment },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       setNewComment(""); // Clear input
@@ -100,10 +98,7 @@ export default function PostView({ post, onClose }: PostViewProps) {
           {/* Header with Close Button */}
           <div className="flex justify-between items-center bg-gray-100 px-4 py-3 rounded-t-lg">
             <h3 className="text-lg font-semibold">Post Details</h3>
-            <Button
-              className="text-gray-600 hover:bg-gray-300 rounded-full p-2"
-              onClick={onClose}
-            >
+            <Button className="text-gray-600 hover:bg-gray-300 rounded-full p-2" onClick={onClose}>
               <X className="w-5 h-5" />
             </Button>
           </div>
@@ -136,17 +131,13 @@ export default function PostView({ post, onClose }: PostViewProps) {
               {isLoadingComments ? (
                 <p className="text-gray-500">Loading comments...</p>
               ) : comments.length === 0 ? (
-                <p className="text-gray-500">
-                  No comments yet. Be the first to comment!
-                </p>
+                <p className="text-gray-500">No comments yet. Be the first to comment!</p>
               ) : (
                 <div className="space-y-3">
                   {comments.map((comment) => (
                     <Card key={comment.id} className="border shadow-sm">
                       <CardContent className="p-4">
-                        <p className="text-sm text-gray-500">
-                          {comment.nickname || "Anonymous"}:
-                        </p>
+                        <p className="text-sm text-gray-500">{comment.nickname || "Anonymous"}:</p>
                         <p className="mt-1">{comment.content}</p>
                       </CardContent>
                     </Card>
@@ -168,17 +159,10 @@ export default function PostView({ post, onClose }: PostViewProps) {
                 }}
               />
               <div className="flex justify-between mt-3">
-                <Button
-                  variant="secondary"
-                  className="text-gray-600"
-                  onClick={onClose}
-                >
+                <Button variant="secondary" className="text-gray-600" onClick={onClose}>
                   Cancel
                 </Button>
-                <Button
-                  className="bg-[#bc4312] text-white"
-                  onClick={handleAddComment}
-                >
+                <Button className="bg-[#bc4312] text-white" onClick={handleAddComment}>
                   Add Comment
                 </Button>
               </div>

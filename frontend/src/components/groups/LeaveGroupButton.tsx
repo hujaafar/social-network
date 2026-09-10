@@ -45,7 +45,6 @@ export function LeaveGroupButton({ groupId, onLeave }: LeaveGroupButtonProps) {
 
         if (onLeave) onLeave();
       } catch (error: unknown) {
-
         if (axios.isAxiosError(error)) {
           if (error.response?.status === 403) {
             await MySwal.fire({

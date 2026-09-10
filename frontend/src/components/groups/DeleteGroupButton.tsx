@@ -1,7 +1,6 @@
 "use client";
 import { apiUrl } from "@/lib/api";
 
-
 import React from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -15,10 +14,7 @@ interface DeleteGroupButtonProps {
 
 const MySwal = withReactContent(Swal);
 
-export function DeleteGroupButton({
-  groupId,
-  onDelete,
-}: DeleteGroupButtonProps) {
+export function DeleteGroupButton({ groupId, onDelete }: DeleteGroupButtonProps) {
   const handleDelete = async () => {
     const result = await MySwal.fire({
       title: "Delete Group?",
@@ -33,13 +29,10 @@ export function DeleteGroupButton({
 
     if (result.isConfirmed) {
       try {
-        const response = await axios.delete(
-          apiUrl("/groups/delete"),
-          {
-            data: { group_id: groupId },
-            withCredentials: true,
-          }
-        );
+        const response = await axios.delete(apiUrl("/groups/delete"), {
+          data: { group_id: groupId },
+          withCredentials: true,
+        });
 
         // Show success alert
         await MySwal.fire({

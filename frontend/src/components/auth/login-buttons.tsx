@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button"
-import { Github } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { Github } from "lucide-react";
 
 export function LoginButtons() {
   return (
@@ -19,6 +19,5 @@ export function LoginButtons() {
         </Button>
       </div>
     </div>
-  )
+  );
 }
-

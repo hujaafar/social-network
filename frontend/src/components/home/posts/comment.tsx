@@ -19,7 +19,6 @@ interface Comment {
 }
 
 export function CommentItem({ comment }: CommentItemProps) {
-
   // Use comment.avatar if present, otherwise try comment.userProfileImage
   const avatarSource = comment.avatar;
 
@@ -36,9 +35,7 @@ export function CommentItem({ comment }: CommentItemProps) {
         <div className="flex flex-wrap gap-2 justify-between items-center mb-1">
           <h4 className="font-semibold text-gray-900">{comment.nickname}</h4>
           <p className="text-xs text-gray-500">
-            {comment.created_at
-              ? formatPostDate(comment.created_at)
-              : "Just now"}
+            {comment.created_at ? formatPostDate(comment.created_at) : "Just now"}
           </p>
         </div>
         <p className="text-gray-800 text-sm leading-relaxed break-words whitespace-pre-wrap">

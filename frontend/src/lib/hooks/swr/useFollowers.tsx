@@ -5,10 +5,8 @@ import { fetcher } from "@/lib/hooks/swr/fetcher";
 export function useFollowers(userId?: string) {
   // If userId is provided, use it; otherwise, rely on the session's logged-in user.
   const { data, error } = useSWR(
-    userId
-      ? `${API_ORIGIN}/followers?user_id=${userId}`
-      : `${API_ORIGIN}/followers`,
-    fetcher
+    userId ? `${API_ORIGIN}/followers?user_id=${userId}` : `${API_ORIGIN}/followers`,
+    fetcher,
   );
 
   return {

@@ -9,10 +9,7 @@ interface UseLikesReturn {
   handleLike: (postId: string) => Promise<void>;
 }
 
-export function useLikes(
-  initialPosts: Post[],
-  refreshPosts?: () => void
-): UseLikesReturn {
+export function useLikes(initialPosts: Post[], refreshPosts?: () => void): UseLikesReturn {
   const [likesState, setLikesState] = useState<{ [key: string]: boolean }>({});
   const [likesCount, setLikesCount] = useState<{ [key: string]: number }>({});
 

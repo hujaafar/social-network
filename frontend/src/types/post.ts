@@ -13,5 +13,4 @@ export interface Post {
   nickname?: string;
   has_liked: boolean;
   avatar?: string;
-  
 }

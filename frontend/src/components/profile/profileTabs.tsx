@@ -61,8 +61,7 @@ export default function ProfileTabs({ user }: ProfileTabsProps) {
         {user.followers !== null && user.followers.length > 0 ? (
           user.followers
             .filter(
-              (follower, index, self) =>
-                self.findIndex((f) => f.id === follower.id) === index
+              (follower, index, self) => self.findIndex((f) => f.id === follower.id) === index,
             )
             .map((follower, index) => (
               <FollowerItem
@@ -82,8 +81,7 @@ export default function ProfileTabs({ user }: ProfileTabsProps) {
         {user.following !== null && user.following.length > 0 ? (
           user.following
             .filter(
-              (following, index, self) =>
-                self.findIndex((f) => f.id === following.id) === index
+              (following, index, self) => self.findIndex((f) => f.id === following.id) === index,
             )
             .map((following, index) => (
               <FollowingItem

@@ -54,9 +54,7 @@ export default function EventsTab({
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">
-                Create New Event
-              </DialogTitle>
+              <DialogTitle className="text-lg font-semibold">Create New Event</DialogTitle>
             </DialogHeader>
             <Input
               placeholder="Event Title"
@@ -97,9 +95,7 @@ export default function EventsTab({
             >
               <CardContent className="p-6">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-xl font-bold text-[#bc4312]">
-                    {event.title}
-                  </h4>
+                  <h4 className="text-xl font-bold text-[#bc4312]">{event.title}</h4>
                   <div className="flex items-center text-gray-600 text-sm">
                     <CalendarDays className="w-5 h-5 mr-1" />
                     {new Date(event.event_date).toLocaleString()}
@@ -139,8 +135,8 @@ export default function EventsTab({
                       {event.user_status === "going"
                         ? "Going"
                         : event.user_status === "not going"
-                        ? "Not Going"
-                        : "None"}
+                          ? "Not Going"
+                          : "None"}
                     </strong>
                   </p>
                 </div>

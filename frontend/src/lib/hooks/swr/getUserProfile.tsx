@@ -6,7 +6,7 @@ export function useUserProfile(user_id?: string) {
   const shouldFetch = !!user_id;
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_ORIGIN}/users/profile?user_id=${user_id}` : null,
-    fetcher
+    fetcher,
   );
 
   return {

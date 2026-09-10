@@ -2,7 +2,6 @@
 /* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
 import { API_ORIGIN } from "@/lib/api";
 
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,10 +74,7 @@ export default function PostsTab({
               onChange={(e) => setPostFile(e.target.files?.[0] || null)}
               className="mt-2"
             />
-            <Button
-              className="w-full mt-3 bg-[#bc4312] text-white py-2"
-              onClick={handleCreatePost}
-            >
+            <Button className="w-full mt-3 bg-[#bc4312] text-white py-2" onClick={handleCreatePost}>
               Post
             </Button>
           </DialogContent>
@@ -101,19 +97,13 @@ export default function PostsTab({
                 {/* User Info Section */}
                 <div className="flex items-center space-x-3">
                   <img
-                    src={
-                      post.avatar
-                        ? `${API_ORIGIN}/avatars/${post.avatar}`
-                        : "/profile.png"
-                    }
+                    src={post.avatar ? `${API_ORIGIN}/avatars/${post.avatar}` : "/profile.png"}
                     alt="User Avatar"
                     className="w-12 h-12 rounded-full border border-gray-300 object-cover"
                   />
 
                   <div>
-                    <p className="text-md font-semibold text-gray-800">
-                      {post.nickname || "You"}
-                    </p>
+                    <p className="text-md font-semibold text-gray-800">{post.nickname || "You"}</p>
                     <p className="text-xs text-gray-500">
                       {new Date(post.created_at).toLocaleString()}
                     </p>
@@ -121,9 +111,7 @@ export default function PostsTab({
                 </div>
 
                 {/* Post Content */}
-                <p className="mt-3 text-gray-900 text-sm leading-relaxed">
-                  {post.content}
-                </p>
+                <p className="mt-3 text-gray-900 text-sm leading-relaxed">{post.content}</p>
 
                 {/* Post Image (if available) */}
                 {post.image_url && (

@@ -1,3 +1,5 @@
 "use client";
 import { MainContent } from "@/components/home/mainContent";
-export default function Home() { return <MainContent />; }
+export default function Home() {
+  return <MainContent />;
+}

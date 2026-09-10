@@ -1,7 +1,6 @@
 "use client";
 import { API_ORIGIN } from "@/lib/api";
 
-
 import { useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -81,28 +80,20 @@ export default function ChatTab({
                           : `https://api.dicebear.com/6.x/initials/svg?seed=${msg.sender_id}`
                       }
                     />
-                    <AvatarFallback>
-                      {msg.nickname ? msg.nickname.charAt(0) : "?"}
-                    </AvatarFallback>
+                    <AvatarFallback>{msg.nickname ? msg.nickname.charAt(0) : "?"}</AvatarFallback>
                   </Avatar>
                 )}
 
                 <div
                   className={`p-2 rounded-lg text-sm ${
-                    isCurrentUser
-                      ? "bg-[#bc4312] text-white self-end"
-                      : "bg-gray-200 text-gray-800"
+                    isCurrentUser ? "bg-[#bc4312] text-white self-end" : "bg-gray-200 text-gray-800"
                   }`}
                 >
                   {!isCurrentUser && (
-                    <p className="text-xs font-medium text-gray-600">
-                      {msg.nickname || "You"}
-                    </p>
+                    <p className="text-xs font-medium text-gray-600">{msg.nickname || "You"}</p>
                   )}
                   <p>{msg.message}</p>
-                  <p className="text-xs text-right opacity-60">
-                    {formatTime(msg.created_at)}
-                  </p>
+                  <p className="text-xs text-right opacity-60">{formatTime(msg.created_at)}</p>
                 </div>
               </div>
             );

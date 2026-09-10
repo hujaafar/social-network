@@ -5,4 +5,13 @@ export function middleware(request: NextRequest) {
   if (!request.cookies.get("user_id")) return NextResponse.redirect(new URL("/login", request.url));
   return NextResponse.next();
 }
-export const config = { matcher: ["/", "/groups/:path*", "/chat/:path*", "/profile/:path*", "/settings/:path*", "/notifications/:path*"] };
+export const config = {
+  matcher: [
+    "/",
+    "/groups/:path*",
+    "/chat/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+    "/notifications/:path*",
+  ],
+};
