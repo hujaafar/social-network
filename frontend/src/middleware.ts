@@ -8,6 +8,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
+    "/saved/:path*",
     "/groups/:path*",
     "/chat/:path*",
     "/profile/:path*",
