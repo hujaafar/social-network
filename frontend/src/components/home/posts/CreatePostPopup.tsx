@@ -28,10 +28,12 @@ export function CreatePostPopup({
   isOpen,
   onClose,
   onCreatePost,
+  onCloseAutoFocus,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onCreatePost: () => void;
+  onCloseAutoFocus: (event: Event) => void;
 }) {
   const [content, setContent] = useState("");
   const [image, setImage] = useState<File | null>(null);
@@ -95,11 +97,15 @@ export function CreatePostPopup({
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open && !pending) onClose();
+        if (!open && !pending) {
+          setDragging(false);
+          onClose();
+        }
       }}
     >
       <DialogContent
         className="post-compose-dialog"
+        onCloseAutoFocus={onCloseAutoFocus}
         onDragOver={(event) => {
           if (event.dataTransfer.types.includes("Files")) {
             event.preventDefault();

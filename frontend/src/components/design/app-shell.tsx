@@ -121,7 +121,7 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
                 style={{ scaleX: reduceMotion ? scrollYProgress : progress }}
               />
             </header>
-            <main id="main-content" className="app-main">
+            <main id="main-content" className="app-main" tabIndex={-1}>
               <motion.div
                 key={pathname}
                 initial={false}

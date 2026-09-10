@@ -48,9 +48,11 @@ const destinations = [
 export function CommandSearch({
   open,
   onOpenChange,
+  onCloseAutoFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCloseAutoFocus: (event: Event) => void;
 }) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -100,6 +102,7 @@ export function CommandSearch({
     >
       <DialogContent
         className="command-dialog"
+        onCloseAutoFocus={onCloseAutoFocus}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           input.current?.focus();

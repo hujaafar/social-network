@@ -6,6 +6,7 @@ import { useSWRConfig } from "swr";
 import { CreatePostPopup } from "@/components/home/posts/CreatePostPopup";
 import { CommandSearch } from "@/components/design/command-search";
 import { isPostFeed } from "@/lib/post-cache";
+import { useDialogFocus } from "@/lib/hooks/useDialogFocus";
 
 type Notice = { message: string; tone?: "success" | "error" };
 type Tools = { openComposer: () => void; openSearch: () => void; notify: (notice: Notice) => void };
@@ -23,6 +24,20 @@ export function WorkspaceTools({ children }: { children: React.ReactNode }) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { mutate } = useSWRConfig();
+  const { rememberFocus: rememberComposerFocus, restoreFocus: restoreComposerFocus } =
+    useDialogFocus();
+  const { rememberFocus: rememberSearchFocus, restoreFocus: restoreSearchFocus } = useDialogFocus();
+  const openComposer = useCallback(() => {
+    rememberComposerFocus();
+    setComposerOpen(true);
+  }, [rememberComposerFocus]);
+  const changeSearch = useCallback(
+    (open: boolean) => {
+      if (open) rememberSearchFocus();
+      setSearchOpen(open);
+    },
+    [rememberSearchFocus],
+  );
   const notify = useCallback((next: Notice) => {
     setNotice(next);
     if (timer.current) clearTimeout(timer.current);
@@ -39,17 +54,17 @@ export function WorkspaceTools({ children }: { children: React.ReactNode }) {
     function shortcut(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        if (!composerOpen) setSearchOpen((open) => !open);
+        if (!composerOpen && !event.repeat) changeSearch(!searchOpen);
       }
     }
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
-  }, [composerOpen]);
+  }, [composerOpen, searchOpen, changeSearch]);
   return (
     <WorkspaceContext.Provider
       value={{
-        openComposer: () => setComposerOpen(true),
-        openSearch: () => setSearchOpen(true),
+        openComposer,
+        openSearch: () => changeSearch(true),
         notify,
       }}
     >
@@ -57,12 +72,17 @@ export function WorkspaceTools({ children }: { children: React.ReactNode }) {
       <CreatePostPopup
         isOpen={composerOpen}
         onClose={() => setComposerOpen(false)}
+        onCloseAutoFocus={restoreComposerFocus}
         onCreatePost={() => {
           void mutate(isPostFeed);
           notify({ message: "Your moment is shared." });
         }}
       />
-      <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} />
+      <CommandSearch
+        open={searchOpen}
+        onOpenChange={changeSearch}
+        onCloseAutoFocus={restoreSearchFocus}
+      />
       {notice && (
         <div
           className={`workspace-notice ${notice.tone === "error" ? "notice-error" : ""}`}

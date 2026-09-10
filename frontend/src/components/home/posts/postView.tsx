@@ -43,6 +43,7 @@ export function PostView({ post, onClose, immersive = false }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const input = useRef<HTMLInputElement>(null);
+  const submitting = useRef(false);
   useEffect(() => {
     if (!file) {
       setPreview("");
@@ -54,7 +55,8 @@ export function PostView({ post, onClose, immersive = false }: Props) {
   }, [file]);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!text.trim() || pending || Array.from(text).length > 250) return;
+    if (!text.trim() || submitting.current || Array.from(text).length > 250) return;
+    submitting.current = true;
     setPending(true);
     setError("");
     try {
@@ -75,6 +77,7 @@ export function PostView({ post, onClose, immersive = false }: Props) {
     } catch {
       setError("Your comment couldn’t be posted. Please try again.");
     } finally {
+      submitting.current = false;
       setPending(false);
     }
   }
@@ -139,6 +142,7 @@ export function PostView({ post, onClose, immersive = false }: Props) {
                 type="button"
                 className="icon-button"
                 aria-label="Remove attachment"
+                disabled={pending}
                 onClick={() => setFile(null)}
               >
                 <X size={17} />
