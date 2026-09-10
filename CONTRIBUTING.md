@@ -1,6 +1,6 @@
 # Contributing to Common
 
-Start with the [setup guide](README.md#run-common) and [architecture notes](docs/ARCHITECTURE.md). The redesign currently lives on `feat/common-social-redesign`; use that branch as the base for changes to the new interface while its pull request is open.
+Start with the [setup guide](README.md#run-common) and [architecture notes](docs/ARCHITECTURE.md). The Common redesign is merged into `master`; create focused feature branches from the latest `master`.
 
 ## Make a focused change
 
@@ -9,7 +9,7 @@ Start with the [setup guide](README.md#run-common) and [architecture notes](docs
 3. Use `src/lib/api.ts` for frontend HTTP, media and WebSocket addresses. Avoid hardcoded service origins.
 4. Compose existing UI primitives at their call sites. Leave `src/components/ui` unchanged for visual adjustments.
 5. Use the theme tokens and type hierarchy in the design notes. Keep keyboard focus visible and respect reduced-motion preferences.
-6. Keep real error, loading and empty states. Do not add fake members, activity or delivery confirmations to make a screen look populated.
+6. Keep real error, loading and empty states. Do not invent production members, activity or delivery confirmations. Explicitly requested local samples belong in the [opt-in demo seed](docs/DEMO_DATA.md), clearly labeled as fictional.
 
 Add comments when they explain a contract or constraint that the code alone does not make clear. Avoid comments that restate the next line.
 
