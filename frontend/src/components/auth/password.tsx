@@ -11,6 +11,7 @@ interface PasswordInputProps {
   label: string
   placeholder?: string
   required?: boolean
+  autoComplete?: "current-password" | "new-password"
   value?: string
   setValue: Dispatch<SetStateAction<string>> // Ensure type matches setState
 }
@@ -20,6 +21,7 @@ export function PasswordInput({
   label,
   placeholder = "Enter your password",
   required = false,
+  autoComplete = "current-password",
   value,
   setValue,
 }: PasswordInputProps) {
@@ -34,12 +36,15 @@ export function PasswordInput({
           type={showPassword ? "text" : "password"}
           placeholder={placeholder}
           required={required}
+          autoComplete={autoComplete}
           className="pr-10 transition-all border-gray-200 group-hover:border-[#6C5CE7]/50 focus:border-[#6C5CE7] focus:ring-[#6C5CE7]/20"
           value={value}
           onChange={(e) => setValue(e.target.value)} // Ensure setValue is used correctly
         />
         <Button
           type="button"
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={showPassword}
           variant="ghost"
           size="icon"
           className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#6C5CE7]"
