@@ -1,0 +1,54 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Bell, Menu, Asterisk, ArrowUpRight } from "lucide-react";
+import { LeftSidebar } from "@/components/home/leftSideBar";
+import { RightSidebar } from "@/components/Notifications/Sidebar";
+import { ChatSocketProvider } from "@/lib/ChatSocketProvider";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { motion, useScroll, useSpring, useReducedMotion } from "framer-motion";
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 180, damping: 32 });
+  const reduceMotion = useReducedMotion();
+  if (pathname === "/login" || pathname === "/register") return <>{children}</>;
+  return <ChatSocketProvider>
+    <div className="common-app">
+      <LeftSidebar isOpen={false} onClose={() => setMenuOpen(false)} />
+      <div className="app-workspace">
+        <header className="app-topbar">
+          <div className="topbar-left">
+            <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
+              <DialogTrigger asChild><button className="icon-button mobile-menu" aria-label="Open navigation"><Menu size={21} /></button></DialogTrigger>
+              <DialogContent className="navigation-dialog">
+                <DialogTitle className="sr-only">Navigation</DialogTitle><DialogDescription className="sr-only">Explore Common and manage your account.</DialogDescription>
+                <LeftSidebar isOpen onClose={() => setMenuOpen(false)} />
+              </DialogContent>
+            </Dialog>
+            <Link href="/" className="mobile-wordmark wordmark">common<Asterisk aria-hidden="true" /></Link>
+            <span className="topbar-label">A LITTLE MORE <strong>CONNECTED.</strong></span>
+          </div>
+          <div className="topbar-actions">
+            <Link href="/groups" className="explore-link">Find your circle <ArrowUpRight size={16} /></Link>
+            <Dialog open={activityOpen} onOpenChange={setActivityOpen}>
+              <DialogTrigger asChild><button className="icon-button" aria-label="Open notifications"><Bell size={20} /></button></DialogTrigger>
+              <DialogContent className="activity-dialog">
+                <DialogTitle className="sr-only">Notifications</DialogTitle><DialogDescription className="sr-only">Your follow requests, group invitations and event updates.</DialogDescription>
+                <RightSidebar isOpen onClose={() => setActivityOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
+          <motion.div className="reading-progress" style={{ scaleX: reduceMotion ? scrollYProgress : progress }} />
+        </header>
+        <main id="main-content" className="app-main">{children}</main>
+        <footer className="app-footer"><Link href="/" className="wordmark">common<Asterisk aria-hidden="true" /></Link><span>A place for your people.</span><a href="#main-content">Back to top ↑</a></footer>
+      </div>
+    </div>
+  </ChatSocketProvider>;
+}
+
