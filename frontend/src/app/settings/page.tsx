@@ -2,7 +2,6 @@
 /* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
 import { apiUrl, API_ORIGIN } from "@/lib/api";
 
-
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
@@ -52,12 +51,16 @@ export default function SettingsPage() {
       if (user.avatar) {
         const url = `${API_ORIGIN}/avatars/${user.avatar}`;
         setAvatarPreview(url);
-
       }
     }
   }, [user]);
 
-  useEffect(() => () => { if (avatarPreview.startsWith("blob:")) URL.revokeObjectURL(avatarPreview); }, [avatarPreview]);
+  useEffect(
+    () => () => {
+      if (avatarPreview.startsWith("blob:")) URL.revokeObjectURL(avatarPreview);
+    },
+    [avatarPreview],
+  );
 
   // Handler for avatar file input change.
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,14 +85,10 @@ export default function SettingsPage() {
         formData.append("nickname", nickname);
         formData.append("about_me", aboutMe);
         formData.append("avatar", avatarFile);
-        await axios.put(
-          apiUrl("/users/profile/update"),
-          formData,
-          {
-            withCredentials: true,
-            headers: { "Content-Type": "multipart/form-data" },
-          }
-        );
+        await axios.put(apiUrl("/users/profile/update"), formData, {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       } else {
         await axios.put(
           apiUrl("/users/profile/update"),
@@ -100,7 +99,7 @@ export default function SettingsPage() {
             about_me: aboutMe,
             avatar: avatar,
           },
-          { withCredentials: true }
+          { withCredentials: true },
         );
       }
       setMessage("Profile updated successfully!");
@@ -131,37 +130,42 @@ export default function SettingsPage() {
       await axios.put(
         apiUrl("/users/profile/privacy"),
         { private: !isPrivate },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       setIsPrivate(!isPrivate);
       setMessage("Privacy setting updated!");
       setMessageType("success");
       refreshUser();
-    } catch (err: unknown) {
-      console.log(err);
+    } catch {
       setMessage("Error updating privacy setting.");
       setMessageType("error");
     }
   };
 
   if (!mounted) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
-  if (isLoading) return <LoadingSpinner size="large"/>;
+  if (isLoading) return <LoadingSpinner size="large" />;
   if (isError) return <div>Error loading profile.</div>;
 
   return (
     <div className="page-wrap settings-page">
-      <header className="page-intro"><div><span className="eyebrow">MAKE YOURSELF AT HOME</span><h1 className="page-title">Your space.<br /><em>Your rules.</em></h1><p>Update your details and decide who sees your world.</p></div></header>
+      <header className="page-intro">
+        <div>
+          <span className="eyebrow">MAKE YOURSELF AT HOME</span>
+          <h1 className="page-title">
+            Your space.
+            <br />
+            <em>Your rules.</em>
+          </h1>
+          <p>Update your details and decide who sees your world.</p>
+        </div>
+      </header>
       {/* Main Content Area */}
       <div className="settings-content">
         <Card>
           <CardHeader>
-            <CardTitle className="text-[#bc4312]">The essentials</CardTitle>
+            <CardTitle className="text-foreground">The essentials</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleProfileUpdate} className="space-y-4">
@@ -191,11 +195,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <Label htmlFor="aboutMe">About Me</Label>
-                <Input
-                  id="aboutMe"
-                  value={aboutMe}
-                  onChange={(e) => setAboutMe(e.target.value)}
-                />
+                <Input id="aboutMe" value={aboutMe} onChange={(e) => setAboutMe(e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="avatar">Avatar</Label>
@@ -220,7 +220,7 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
-              <Button type="submit" className="bg-[#bc4312] text-white">
+              <Button type="submit" className="bg-primary text-primary-foreground">
                 Update Profile
               </Button>
             </form>
@@ -230,25 +230,15 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold">Privacy Settings</h2>
               <p className="mb-2">
                 Your account is currently{" "}
-                <span className="font-bold">
-                  {isPrivate ? "Private" : "Public"}
-                </span>
-                .
+                <span className="font-bold">{isPrivate ? "Private" : "Public"}</span>.
               </p>
-              <Button
-                onClick={handleTogglePrivacy}
-                className="bg-[#bc4312] text-white"
-              >
+              <Button onClick={handleTogglePrivacy} className="bg-primary text-primary-foreground">
                 Switch to {isPrivate ? "Public" : "Private"} Account
               </Button>
             </div>
 
             {message && (
-              <p
-                className={`mt-4 ${
-                  messageType === "error" ? "text-red-600" : "text-green-600"
-                }`}
-              >
+              <p className={`mt-4 ${messageType === "error" ? "text-red-600" : "text-green-600"}`}>
                 {message}
               </p>
             )}

@@ -20,26 +20,64 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending) return;
-    setPending(true); setError("");
+    setPending(true);
+    setError("");
     try {
-      await axios.post(apiUrl("/login"), { identifier: identifier.trim(), password }, { withCredentials: true });
-      router.replace("/"); router.refresh();
+      await axios.post(
+        apiUrl("/login"),
+        { identifier: identifier.trim(), password },
+        { withCredentials: true },
+      );
+      router.replace("/");
+      router.refresh();
     } catch (err) {
       const status = axios.isAxiosError(err) ? err.response?.status : undefined;
-      setError(status === 400 || status === 401 ? "That email or password doesn’t match. Please try again." : "We couldn’t connect right now. Please try again in a moment.");
+      setError(
+        status === 400 || status === 401
+          ? "That email or password doesn’t match. Please try again."
+          : "We couldn’t connect right now. Please try again in a moment.",
+      );
       setPending(false);
     }
   }
-  return <AuthLayout title="Welcome back." subtitle="A little catch-up is always a good idea.">
-    <form className="auth-form" onSubmit={handleLogin} aria-busy={pending}>
-      <div className="form-field">
-        <Label htmlFor="identifier">Email or nickname</Label>
-        <Input id="identifier" name="username" autoComplete="username" placeholder="You know the one" required value={identifier} onChange={e => setIdentifier(e.target.value)} />
+  return (
+    <AuthLayout title="YOU’RE IN GOOD COMPANY." subtitle="Sign in and pick up where you left off.">
+      <form className="auth-form" onSubmit={handleLogin} aria-busy={pending}>
+        <div className="form-field">
+          <Label htmlFor="identifier">Email or nickname</Label>
+          <Input
+            id="identifier"
+            name="username"
+            autoComplete="username"
+            placeholder="Your email or nickname"
+            required
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+          />
+        </div>
+        <PasswordInput
+          id="password"
+          label="Password"
+          value={password}
+          setValue={setPassword}
+          required
+        />
+        {error && (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        )}
+        <Button type="submit" className="auth-submit" disabled={pending}>
+          {pending ? "Signing in…" : "Sign in to Common"}
+          {pending ? <LoaderCircle className="animate-spin" size={18} /> : <ArrowRight size={18} />}
+        </Button>
+      </form>
+      <div className="auth-switch">
+        <span>Not part of the story yet?</span>
+        <Link href="/register">
+          Create an account <ArrowUpRight size={16} />
+        </Link>
       </div>
-      <PasswordInput id="password" label="Password" value={password} setValue={setPassword} required />
-      {error && <p className="inline-error" role="alert">{error}</p>}
-      <Button type="submit" className="auth-submit" disabled={pending}>{pending ? "Signing in…" : "Let’s reconnect"}{pending ? <LoaderCircle className="animate-spin" size={18} /> : <ArrowRight size={18} />}</Button>
-    </form>
-    <div className="auth-switch"><span>New around here?</span><Link href="/register">Find your people <ArrowUpRight size={16} /></Link></div>
-  </AuthLayout>;
+    </AuthLayout>
+  );
 }

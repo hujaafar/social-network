@@ -1,7 +1,6 @@
 "use client";
 import { apiUrl } from "@/lib/api";
 
-
 import { useParams } from "next/navigation";
 import { useUserProfile } from "@/lib/hooks/swr/getUserProfile";
 import ProfileHeader from "@/components/profile/profileHeader";
@@ -15,15 +14,21 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 export default function ProfilePage() {
   const params = useParams();
   const [isRequested, setIsRequested] = useState(false);
+  const [requestPending, setRequestPending] = useState(false);
   const userId = params?.id as string | undefined;
   const { user, isLoading, isError } = useUserProfile(userId);
-  const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [alert, setAlert] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
   if (!userId) return <p className="text-center text-red-500">Invalid user ID.</p>;
-  if (isLoading) return <LoadingSpinner size="large"/>;
+  if (isLoading) return <LoadingSpinner size="large" />;
   if (isError) return <p className="text-center text-red-500">Error loading profile.</p>;
   const followRequest = async (followedId: string) => {
+    if (requestPending) return;
+    setRequestPending(true);
     try {
-      const response = await axios.post(
+      await axios.post(
         apiUrl("/follow"),
         { followed_id: followedId },
         {
@@ -31,40 +36,46 @@ export default function ProfilePage() {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
-      console.log(response.data);
       setIsRequested(true);
-        setAlert({ type: "success", message: "User followed successfully" });
-    } catch (error) {
-      console.log("Error following user:", error);
-        setAlert({ type: "error", message: "Failed to follow user" });
+      setAlert({ type: "success", message: "Follow request sent." });
+    } catch {
+      setAlert({ type: "error", message: "We couldn’t send your request. Please try again." });
+    } finally {
+      setRequestPending(false);
     }
   };
   // Handle Private Profile Case
   if (user.private && !user.is_following && !user.is_my_profile) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
-        <div className="max-w-lg w-full bg-white shadow-lg rounded-lg p-6 text-center border border-gray-200">
+      <div className="page-wrap profile-private">
+        <div className="empty-state">
           <LockIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-700">This Profile is Private</h2>
           <p className="text-gray-500 mt-2">
-            You must follow <span className="font-medium">@{user.nickname}</span> to view their posts and details.
+            You must follow <span className="font-medium">@{user.nickname}</span> to view their
+            posts and details.
           </p>
-          {!user.is_my_profile && user.pending==="0" && !isRequested && (
-            <Button
-            className="mt-4 bg-[#bc4312] hover:bg-[#bc4312]/90 text-white"
-            onClick={() => followRequest(user.id)}
-          >
-            Request to Follow
-          </Button>
+          {alert && (
+            <p className={alert.type === "error" ? "inline-error" : "inline-note"} role="status">
+              {alert.message}
+            </p>
           )}
-          {((!user.is_my_profile && user.pending==="1" )|| (!user.is_my_profile && isRequested )) && (
+          {!user.is_my_profile && user.pending === "0" && !isRequested && (
             <Button
-            className="mt-4 bg-[rgb(140,136,168)] hover:bg-[rgb(140,136,168)]/90 text-white cursor-not-allowed"
-          >
-            Requested
-          </Button>
+              className="mt-4 new-post-button"
+              disabled={requestPending}
+              onClick={() => followRequest(user.id)}
+            >
+              {requestPending ? "Sending request…" : "Request to follow"}
+            </Button>
+          )}
+          {((!user.is_my_profile && user.pending === "1") ||
+            (!user.is_my_profile && isRequested)) && (
+            <Button className="mt-4" disabled>
+              Requested
+            </Button>
           )}
         </div>
       </div>
@@ -73,7 +84,7 @@ export default function ProfilePage() {
 
   return (
     <>
-    {alert && (
+      {alert && (
         <Alert
           title={alert.type === "success" ? "Success" : "Error"}
           message={alert.message}
@@ -82,11 +93,10 @@ export default function ProfilePage() {
           onClose={() => setAlert(null)}
         />
       )}
-    <div className="w-full max-w-3xl mx-auto px-4 md:px-6 lg:px-8 py-6">
-      <ProfileHeader user={user} />
-      <ProfileTabs user={user} />
-    </div>
+      <div className="w-full max-w-3xl mx-auto px-4 md:px-6 lg:px-8 py-6">
+        <ProfileHeader user={user} />
+        <ProfileTabs user={user} />
+      </div>
     </>
-
   );
 }

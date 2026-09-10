@@ -17,3 +17,16 @@ Composition/framing: vertical 4:5, strong diagonal depth.
 Lighting/mood: natural late-afternoon daylight with hard shadows.
 Color palette: chrome, burnt orange, warm off-white, cobalt blue and deep ink shadows.
 Constraints: no readable text, logos, watermark, or interface.
+
+Asset 3 — Common after-hours
+Use case: photorealistic-natural
+Asset type: premium contemporary culture magazine campaign photograph for the social network Common; immersive login cover and cropped feed photography.
+Primary request: exactly one standalone editorial photograph of four adventurous adult creative friends, all aged mid-20s to 30s, on a concrete rooftop basketball court at blue hour.
+Scene/backdrop: muted red outdoor court on a concrete rooftop; urban skyline sits low in the background beneath an electric cobalt evening sky.
+Subject: four adult friends enjoying a genuine candid moment, laughing together or in relaxed movement. One friend holds a silver compact camera. No one poses or looks toward the taking camera.
+Style/medium: photorealistic high-end fashion documentary photography, premium contemporary culture magazine editorial, cinematic film grain and realistic skin and fabric texture.
+Composition/framing: landscape 3:2. Concentrate all four people and their heads in the center-right lower two-thirds of the image. Preserve strong dark negative space across the left and upper area for later HTML typography. Frame the group comfortably so it can also be cropped for a feed.
+Lighting/mood: blue hour, electric cobalt sky, gritty direct flash highlights, spontaneous and intimate.
+Color palette: cobalt blue, dark negative space, muted red court; a tiny acid-yellow clothing accent.
+Constraints: output only the photograph, no text, no logos, no watermarks, no UI, no generated typography. Exactly four clearly adult people.
+
