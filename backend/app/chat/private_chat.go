@@ -89,9 +89,9 @@ type ChatMessage struct {
 	ReceiverID string `json:"receiver_id"`
 	Message    string `json:"message"`
 	// Type can be "message" for regular messages or "typing" for typing notifications.
-	Type      string `json:"type"`
-	CreatedAt string `json:"created_at"`
-    SenderName string `json:"sender_name"`
+	Type       string `json:"type"`
+	CreatedAt  string `json:"created_at"`
+	SenderName string `json:"sender_name"`
 }
 
 // -----------------------------
@@ -112,131 +112,136 @@ var upgrader = websocket.Upgrader{
 // PrivateChatHandler handles the private chat WebSocket connection.
 
 func PrivateChatHandler(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        // Upgrade connection
-        conn, err := upgrader.Upgrade(w, r, nil)
-        if err != nil {
-            return
-        }
-        defer func() {
-            conn.Close()
-        }()
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Upgrade connection
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer func() {
+			conn.Close()
+		}()
 
-        // Retrieve user ID
-       	userID, err := sessions.GetUserIDFromSession(r)
+		// Retrieve user ID
+		userID, err := sessions.GetUserIDFromSession(r)
 
-        if err != nil {
-            conn.WriteMessage(websocket.TextMessage, []byte("Unauthorized"))
-            return
-        }
-        AddChatClient(userID, conn, db)
-        if err := MarkUserOnline(db, userID); err != nil {
-        }
-        defer func() {
-            RemoveChatClient(userID, db)
-            if err := MarkUserOffline(db, userID); err != nil {
-            }
-        }()
+		if err != nil {
+			conn.WriteMessage(websocket.TextMessage, []byte("Unauthorized"))
+			return
+		}
+		AddChatClient(userID, conn, db)
+		if err := MarkUserOnline(db, userID); err != nil {
+		}
+		defer func() {
+			RemoveChatClient(userID, db)
+			if err := MarkUserOffline(db, userID); err != nil {
+			}
+		}()
 
-        // Set read deadline and pong handler
-        conn.SetReadDeadline(time.Now().Add(pongWait))
-        conn.SetPongHandler(func(appData string) error {
-            conn.SetReadDeadline(time.Now().Add(pongWait))
-            return nil
-        })
+		// Set read deadline and pong handler
+		conn.SetReadDeadline(time.Now().Add(pongWait))
+		conn.SetPongHandler(func(appData string) error {
+			conn.SetReadDeadline(time.Now().Add(pongWait))
+			return nil
+		})
 
-        // Start ticker to send pings periodically
-        ticker := time.NewTicker(pingPeriod)
-        defer ticker.Stop()
-        go func() {
-            for range ticker.C {
-                if err := conn.WriteMessage(websocket.PingMessage, []byte("ping")); err != nil {
-                    return
-                }
-            }
-        }()
+		// Start ticker to send pings periodically
+		ticker := time.NewTicker(pingPeriod)
+		defer ticker.Stop()
+		go func() {
+			for range ticker.C {
+				if err := conn.WriteControl(websocket.PingMessage, []byte("ping"), time.Now().Add(10*time.Second)); err != nil {
+					return
+				}
+			}
+		}()
 
-        // Main read loop
-        for {
-            msgType, msgBytes, err := conn.ReadMessage()
-            if err != nil {
-                break
-            }
-            if msgType != websocket.TextMessage {
-                continue
-            }
+		// Main read loop
+		for {
+			msgType, msgBytes, err := conn.ReadMessage()
+			if err != nil {
+				break
+			}
+			if msgType != websocket.TextMessage {
+				continue
+			}
 
-            var msg ChatMessage
-            if err := json.Unmarshal(msgBytes, &msg); err != nil {
-                continue
-            }
-            // Override sender fields
-            msg.SenderID = userID
-            msg.ID = uuid.New().String()
-            msg.CreatedAt = time.Now().Format(time.RFC3339)
-            err = db.QueryRow("SELECT nickname FROM users WHERE id = ?", msg.SenderID).Scan(&msg.SenderName)
-            if err != nil {
-                msg.SenderName = userID
-            }
+			var msg ChatMessage
+			if err := json.Unmarshal(msgBytes, &msg); err != nil {
+				continue
+			}
+			// Override sender fields
+			msg.SenderID = userID
+			msg.ID = uuid.New().String()
+			msg.CreatedAt = time.Now().Format(time.RFC3339)
+			err = db.QueryRow("SELECT nickname FROM users WHERE id = ?", msg.SenderID).Scan(&msg.SenderName)
+			if err != nil {
+				msg.SenderName = userID
+			}
 
-            // Handle typing notifications
-            if msg.Type == "typing" {
-                if client, ok := GetChatClient(msg.ReceiverID); ok {
-                    typingNotification := map[string]string{
-                        "type":      "typing",
-                        "sender_id": userID,
-                    }
-                    notifBytes, _ := json.Marshal(typingNotification)
-                    client.Conn.WriteMessage(websocket.TextMessage, notifBytes)
-                } else {
-                }
-                continue
-            }
+			// Handle typing notifications
+			if msg.Type == "typing" {
+				if client, ok := GetChatClient(msg.ReceiverID); ok {
+					typingNotification := map[string]string{
+						"type":      "typing",
+						"sender_id": userID,
+					}
+					notifBytes, _ := json.Marshal(typingNotification)
+					client.Conn.WriteMessage(websocket.TextMessage, notifBytes)
+				} else {
+				}
+				continue
+			}
 
-            // Enforce word limit
-            words := strings.Fields(msg.Message)
-            if len(words) > 200 {
-                errorMsg := map[string]string{"error": "Message cannot exceed 200 words"}
-                errorBytes, _ := json.Marshal(errorMsg)
-                conn.WriteMessage(websocket.TextMessage, errorBytes)
-                continue
-            }
+			// Enforce word limit
+			words := strings.Fields(msg.Message)
+			if len(words) > 200 {
+				errorMsg := map[string]string{"error": "Message cannot exceed 200 words"}
+				errorBytes, _ := json.Marshal(errorMsg)
+				conn.WriteMessage(websocket.TextMessage, errorBytes)
+				continue
+			}
 
-            // Check if messaging is allowed
-            var allowed bool
-            checkQuery := `
+			// Check if messaging is allowed
+			var allowed bool
+			checkQuery := `
                 SELECT EXISTS(
                     SELECT 1 FROM followers 
                     WHERE (follower_id = ? AND followed_id = ? AND status = 'accepted')
                        OR (follower_id = ? AND followed_id = ? AND status = 'accepted')
                 )
             `
-            if err := db.QueryRow(checkQuery, userID, msg.ReceiverID, msg.ReceiverID, userID).Scan(&allowed); err != nil || !allowed {
-                errorMsg := map[string]string{"error": "Chat not permitted: you must follow each other to chat."}
-                errorBytes, _ := json.Marshal(errorMsg)
-                conn.WriteMessage(websocket.TextMessage, errorBytes)
-                continue
-            }
+			if err := db.QueryRow(checkQuery, userID, msg.ReceiverID, msg.ReceiverID, userID).Scan(&allowed); err != nil || !allowed {
+				errorMsg := map[string]string{"error": "Chat not permitted: you must follow each other to chat."}
+				errorBytes, _ := json.Marshal(errorMsg)
+				conn.WriteMessage(websocket.TextMessage, errorBytes)
+				continue
+			}
 
-            // Store message in DB
-            _, err = db.Exec(`
+			// Store message in DB
+			_, err = db.Exec(`
                 INSERT INTO private_chat_messages (id, sender_id, receiver_id, message, created_at)
                 VALUES (?, ?, ?, ?, ?)
             `, msg.ID, userID, msg.ReceiverID, msg.Message, msg.CreatedAt)
-            if err != nil {
-            }
+			if err != nil {
+				conn.WriteJSON(map[string]string{"error": "Message could not be saved. Please try again."})
+				continue
+			}
 
-            // Forward message to recipient if connected
-            if client, ok := GetChatClient(msg.ReceiverID); ok {
-                sendBytes, _ := json.Marshal(msg)
-                client.Conn.WriteMessage(websocket.TextMessage, sendBytes)
-            } else {
-            }
-        }
-    }
+			// Acknowledge the persisted ID so the sender can clear its draft and deduplicate history.
+			if err := conn.WriteJSON(msg); err != nil {
+				break
+			}
+
+			// Forward message to recipient if connected
+			if client, ok := GetChatClient(msg.ReceiverID); ok {
+				sendBytes, _ := json.Marshal(msg)
+				client.Conn.WriteMessage(websocket.TextMessage, sendBytes)
+			} else {
+			}
+		}
+	}
 }
-
-
 
 // -----------------------------
 // Mark Message as Read Handler
