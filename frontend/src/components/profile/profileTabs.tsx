@@ -2,9 +2,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FollowerItem from "@/components/profile/followerItem";
 import FollowingItem from "@/components/profile/followingItem";
 import PostsList from "../home/posts/postList";
-import { useState } from "react";
 import { Post } from "@/types/post";
-import { PostView } from "@/components/home/posts/postView";
+import { usePostReader } from "@/components/home/posts/post-reader";
 
 interface Follower {
   id: string;
@@ -30,7 +29,7 @@ interface ProfileTabsProps {
 }
 
 export default function ProfileTabs({ user }: ProfileTabsProps) {
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const { openPost, reader } = usePostReader();
 
   return (
     <Tabs defaultValue="posts">
@@ -42,16 +41,7 @@ export default function ProfileTabs({ user }: ProfileTabsProps) {
 
       <TabsContent value="posts">
         {user.posts !== null && user.posts.length > 0 ? (
-          selectedPost ? (
-            <PostView
-              post={selectedPost}
-              onClose={() => setSelectedPost(null)}
-              likesState={{}}
-              likesCount={{}}
-            />
-          ) : (
-            <PostsList posts={user.posts} onSelectPost={setSelectedPost} />
-          )
+          <PostsList posts={user.posts} onSelectPost={openPost} />
         ) : (
           <p className="text-center text-gray-500">No posts yet.</p>
         )}
@@ -96,6 +86,7 @@ export default function ProfileTabs({ user }: ProfileTabsProps) {
           <p className="text-center text-gray-500">Not following anyone yet.</p>
         )}
       </TabsContent>
+      {reader}
     </Tabs>
   );
 }

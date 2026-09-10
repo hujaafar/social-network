@@ -3,8 +3,11 @@ import useSWR from "swr";
 
 import { fetcher } from "@/lib/hooks/swr/fetcher";
 
-export function usePosts() {
-  const { data, error, isLoading, mutate } = useSWR(apiUrl("/posts/all"), fetcher);
+export function usePosts(feed: "all" | "following" | "saved" = "all") {
+  const { data, error, isLoading, mutate } = useSWR(
+    apiUrl(feed === "all" ? "/posts/all" : `/posts/all?feed=${feed}`),
+    fetcher,
+  );
 
   return {
     posts: data || [],

@@ -15,6 +15,8 @@ interface Props {
   onSelectPost: (post: Post) => void;
   onRetry?: () => void;
   onCreate?: () => void;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 export default function PostsList({
   posts,
@@ -23,9 +25,11 @@ export default function PostsList({
   onSelectPost,
   onRetry,
   onCreate,
+  emptyTitle = "Every conversation starts somewhere.",
+  emptyDescription = "Share your first moment, or find people through search and circles.",
 }: Props) {
   const safePosts = Array.isArray(posts) ? posts : [];
-  const { likesState, likesCount, handleLike } = useLikes(safePosts, onRetry);
+  const { likesState, likesCount, pendingLikes, handleLike } = useLikes(safePosts, onRetry);
   const reduceMotion = useReducedMotion();
   const currentUserId = Cookies.get("user_id");
   if (isLoading)
@@ -55,8 +59,8 @@ export default function PostsList({
     return (
       <div className="empty-state">
         <MessageCircle size={32} />
-        <h3>Every conversation starts somewhere.</h3>
-        <p>Share your first moment, or find people through search and circles.</p>
+        <h3>{emptyTitle}</h3>
+        <p>{emptyDescription}</p>
         {onCreate && (
           <Button onClick={onCreate}>
             <Plus size={16} /> Share a moment
@@ -84,6 +88,7 @@ export default function PostsList({
             post={post}
             hasLiked={likesState[post.id] ?? post.has_liked}
             likesCount={likesCount[post.id] ?? post.likes_count ?? 0}
+            likePending={pendingLikes[post.id]}
             onLike={() => handleLike(post.id)}
             onSelectPost={() => onSelectPost(post)}
           />

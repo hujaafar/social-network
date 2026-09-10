@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Barlow_Condensed, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./auth.css";
+import "./interactions.css";
 import { AppShell } from "@/components/design/app-shell";
 const sans = Manrope({ variable: "--font-geist-sans", subsets: ["latin"], display: "swap" });
 const display = Barlow_Condensed({

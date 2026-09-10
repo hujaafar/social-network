@@ -1,35 +1,19 @@
 "use client";
-import { useState, useDeferredValue } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import {
-  Search,
-  Plus,
-  ArrowUpRight,
-  Image as ImageIcon,
-  MessageCircle,
-  X,
-  Users,
-  Asterisk,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { CreatePostPopup } from "@/components/home/posts/CreatePostPopup";
+import { ArrowUpRight, Image as ImageIcon, MessageCircle, Asterisk, Bookmark } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PostsList from "@/components/home/posts/postList";
-import { PostView } from "@/components/home/posts/postView";
+import { usePostReader } from "@/components/home/posts/post-reader";
 import { EditorialImage } from "@/components/design/editorial-image";
+import { useWorkspace } from "@/components/design/workspace-tools";
 import { usePosts } from "@/lib/hooks/swr/getPosts";
-import { Post } from "@/types/post";
-import { useSearch } from "@/lib/hooks/useSearch";
-import { User } from "@/types/user";
-import { Group } from "@/types/groupTypes";
 
 export function MainContent() {
-  const { posts, isLoading, isError, refreshPosts } = usePosts();
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const searchQuery = useDeferredValue(query.trim());
-  const { searchResults, isLoading: searching, isError: searchError } = useSearch(searchQuery);
+  const [feed, setFeed] = useState<"all" | "following">("all");
+  const { posts, isLoading, isError, refreshPosts } = usePosts(feed);
+  const { openComposer, openSearch } = useWorkspace();
+  const { openPost, reader } = usePostReader();
   return (
     <div className="feed-page">
       <div className="feed-heading">
@@ -39,135 +23,81 @@ export function MainContent() {
             IN THE <em>LOOP.</em>
           </h1>
         </div>
-        <Button
-          className="new-post-button heading-post-button"
-          onClick={() => setIsCreatePostOpen(true)}
-        >
-          <Plus size={18} /> Share a moment
-        </Button>
+        <Link href="/saved" className="collection-link">
+          <Bookmark size={18} /> Your collection <ArrowUpRight size={17} />
+        </Link>
       </div>
       <div className="feed-layout">
         <section className="feed-stream" aria-label="Your feed">
-          <div className="feed-tools">
-            <div className="search-field">
-              <Search size={18} aria-hidden="true" />
-              <Input
-                aria-label="Search people and circles"
-                placeholder="Find people or circles"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+          <button className="composer-prompt" onClick={openComposer}>
+            <span className="composer-icon">
+              <MessageCircle size={22} />
+            </span>
+            <span>
+              What’s on your mind?<small>A thought, a photo, a little update.</small>
+            </span>
+            <ImageIcon size={21} />
+          </button>
+          <Link href="/groups" className="feed-campaign">
+            <div className="feed-campaign-copy">
+              <span className="eyebrow">FIND YOUR COMMON GROUND</span>
+              <strong>
+                YOUR PEOPLE.
+                <br />
+                YOUR KIND
+                <br />
+                OF ENERGY<span>.</span>
+              </strong>
+              <span className="campaign-action">
+                Explore circles <ArrowUpRight size={19} />
+              </span>
+            </div>
+            <div className="feed-campaign-image">
+              <EditorialImage
+                src="/images/common-afterhours.webp"
+                alt="Friends enjoying an evening together on a rooftop"
+                priority
+                reveal={false}
+                sizes="(max-width: 600px) 60vw, 35vw"
               />
-              {query && (
-                <button
-                  className="icon-button"
-                  aria-label="Clear search"
-                  onClick={() => setQuery("")}
-                >
-                  <X size={16} />
+              <Asterisk className="campaign-asterisk" aria-hidden="true" />
+            </div>
+          </Link>
+
+          <Tabs
+            value={feed}
+            onValueChange={(value) => setFeed(value as "all" | "following")}
+            className="feed-tabs"
+          >
+            <div className="feed-tabs-heading">
+              <TabsList aria-label="Choose your feed">
+                <TabsTrigger value="all">The latest</TabsTrigger>
+                <TabsTrigger value="following">Following</TabsTrigger>
+              </TabsList>
+              <span>GOOD THINGS, SHARED.</span>
+            </div>
+            <TabsContent value={feed}>
+              <PostsList
+                posts={posts}
+                isLoading={isLoading}
+                isError={isError}
+                onSelectPost={openPost}
+                onRetry={() => refreshPosts()}
+                onCreate={feed === "all" ? openComposer : undefined}
+                emptyTitle={feed === "following" ? "Make this feed feel like you." : undefined}
+                emptyDescription={
+                  feed === "following"
+                    ? "Follow people you connect with. Their shared moments will appear here once your follow is accepted."
+                    : undefined
+                }
+              />
+              {feed === "following" && !posts.length && !isLoading && !isError && (
+                <button className="following-find-button" onClick={openSearch}>
+                  Find your people <ArrowUpRight size={18} />
                 </button>
               )}
-            </div>
-          </div>
-          {!searchQuery && !selectedPost && (
-            <>
-              <button className="composer-prompt" onClick={() => setIsCreatePostOpen(true)}>
-                <span className="composer-icon">
-                  <MessageCircle size={22} />
-                </span>
-                <span>
-                  What’s on your mind?<small>A thought, a photo, a little update.</small>
-                </span>
-                <ImageIcon size={21} />
-              </button>
-              <Link href="/groups" className="feed-campaign">
-                <div className="feed-campaign-copy">
-                  <span className="eyebrow">FIND YOUR COMMON GROUND</span>
-                  <strong>
-                    YOUR PEOPLE.
-                    <br />
-                    YOUR KIND
-                    <br />
-                    OF ENERGY<span>.</span>
-                  </strong>
-                  <span className="campaign-action">
-                    Explore circles <ArrowUpRight size={19} />
-                  </span>
-                </div>
-                <div className="feed-campaign-image">
-                  <EditorialImage
-                    src="/images/common-afterhours.webp"
-                    alt="Friends enjoying an evening together on a rooftop"
-                    priority
-                    reveal={false}
-                    sizes="(max-width: 600px) 60vw, 35vw"
-                  />
-                  <Asterisk className="campaign-asterisk" aria-hidden="true" />
-                </div>
-              </Link>
-              <div className="section-line">
-                <h2>The latest</h2>
-                <span>From your community</span>
-              </div>
-            </>
-          )}
-          {searchQuery ? (
-            <section className="search-results" aria-live="polite" aria-label="Search results">
-              <h2>Find your people.</h2>
-              {searching && <p className="inline-note">Looking around…</p>}
-              {searchError && (
-                <p role="alert" className="inline-error">
-                  Search is unavailable. Please try again.
-                </p>
-              )}
-              {searchResults && (
-                <>
-                  <h3>People</h3>
-                  {searchResults.users?.length ? (
-                    searchResults.users.map((user: User) => (
-                      <Link className="search-result" key={user.id} href={`/profile/${user.id}`}>
-                        <span className="initial-avatar">{user.nickname?.charAt(0) || "C"}</span>
-                        <strong>{user.nickname || `${user.first_name} ${user.last_name}`}</strong>
-                        <ArrowUpRight size={18} />
-                      </Link>
-                    ))
-                  ) : (
-                    <p className="inline-note">No people match “{searchQuery}”.</p>
-                  )}
-                  <h3>Circles</h3>
-                  {searchResults.groups?.length ? (
-                    searchResults.groups.map((group: Group) => (
-                      <Link className="search-result" key={group.id} href={`/groups#${group.id}`}>
-                        <Users size={22} />
-                        <strong>{group.name}</strong>
-                        <ArrowUpRight size={18} />
-                      </Link>
-                    ))
-                  ) : (
-                    <p className="inline-note">No circles match “{searchQuery}”.</p>
-                  )}
-                </>
-              )}
-            </section>
-          ) : selectedPost ? (
-            <PostView
-              post={selectedPost}
-              onClose={() => {
-                setSelectedPost(null);
-                refreshPosts();
-              }}
-              likesState={{}}
-              likesCount={{}}
-            />
-          ) : (
-            <PostsList
-              posts={posts}
-              isLoading={isLoading}
-              isError={isError}
-              onSelectPost={setSelectedPost}
-              onRetry={() => refreshPosts()}
-              onCreate={() => setIsCreatePostOpen(true)}
-            />
-          )}
+            </TabsContent>
+          </Tabs>
         </section>
         <aside className="discovery-rail" aria-label="Discover Common">
           <div className="rail-note">
@@ -210,13 +140,8 @@ export function MainContent() {
           </div>
         </aside>
       </div>
-      <CreatePostPopup
-        isOpen={isCreatePostOpen}
-        onClose={() => setIsCreatePostOpen(false)}
-        onCreatePost={() => {
-          refreshPosts();
-        }}
-      />
+
+      {reader}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   Asterisk,
   ArrowUpRight,
   Bell,
+  Bookmark,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -29,6 +30,7 @@ export function LeftSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const menuItems = [
     { icon: Home, label: "Your feed", href: "/" },
     { icon: Users, label: "Circles", href: "/groups" },
+    { icon: Bookmark, label: "Saved posts", href: "/saved" },
     { icon: MessageCircle, label: "Messages", href: "/chat" },
     { icon: Bell, label: "Notifications", href: "/notifications" },
     { icon: Settings, label: "Settings", href: "/settings" },

@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -23,6 +23,7 @@ import { ImagePlus, ArrowUpRight, X } from "lucide-react";
 import { useFollowers } from "@/lib/hooks/swr/useFollowers";
 import Cookies from "js-cookie";
 import { apiUrl } from "@/lib/api";
+import { imageFileError } from "@/lib/image-file";
 export function CreatePostPopup({
   isOpen,
   onClose,
@@ -39,6 +40,16 @@ export function CreatePostPopup({
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const busy = useRef(false);
+  const characterCount = Array.from(content).length;
+  function attach(file?: File) {
+    if (!file || busy.current) return;
+    const validation = imageFileError(file);
+    setError(validation || "");
+    if (!validation) setImage(file);
+  }
   const { followers, isLoading: followersLoading } = useFollowers(Cookies.get("user_id") || "");
   useEffect(() => {
     if (!image) {
@@ -51,7 +62,8 @@ export function CreatePostPopup({
   }, [image]);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!content.trim() || pending) return;
+    if (!content.trim() || busy.current || characterCount > 500) return;
+    busy.current = true;
     setPending(true);
     setError("");
     try {
@@ -75,6 +87,7 @@ export function CreatePostPopup({
     } catch {
       setError("Your post couldn’t be shared. Your draft is still here—try again.");
     } finally {
+      busy.current = false;
       setPending(false);
     }
   }
@@ -85,13 +98,46 @@ export function CreatePostPopup({
         if (!open && !pending) onClose();
       }}
     >
-      <DialogContent className="post-compose-dialog">
+      <DialogContent
+        className="post-compose-dialog"
+        onDragOver={(event) => {
+          if (event.dataTransfer.types.includes("Files")) {
+            event.preventDefault();
+            setDragging(true);
+          }
+        }}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          attach(event.dataTransfer.files[0]);
+        }}
+      >
+        {dragging && (
+          <div className="compose-drop-overlay" aria-hidden="true">
+            <ImagePlus size={40} />
+            <strong>Drop a little of your world.</strong>
+            <span>JPG, PNG or GIF · up to 10 MB</span>
+          </div>
+        )}
         <DialogHeader>
           <span className="eyebrow">A LITTLE OF YOUR EVERYDAY</span>
           <DialogTitle>Share a moment.</DialogTitle>
           <DialogDescription>Big ideas, small updates. Make it your own.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="post-compose-form">
+        <form
+          ref={formRef}
+          onSubmit={submit}
+          className="post-compose-form"
+          onKeyDown={(event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+              event.preventDefault();
+              formRef.current?.requestSubmit();
+            }
+          }}
+        >
           <Label htmlFor="post-content" className="sr-only">
             Your post
           </Label>
@@ -100,7 +146,7 @@ export function CreatePostPopup({
             placeholder="What’s on your mind?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            maxLength={500}
+            aria-describedby="compose-counter"
             required
             disabled={pending}
           />
@@ -114,18 +160,14 @@ export function CreatePostPopup({
                 className="sr-only"
                 disabled={pending}
                 onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  if (file && file.size > 10 * 1024 * 1024) {
-                    setError("Choose a photo smaller than 10 MB.");
-                    e.target.value = "";
-                  } else {
-                    setImage(file);
-                    setError("");
-                  }
+                  attach(e.target.files?.[0]);
+                  e.target.value = "";
                 }}
               />
             </label>
-            <span>{content.length}/500</span>
+            <span id="compose-counter" className={characterCount > 500 ? "inline-error" : ""}>
+              {characterCount}/500
+            </span>
           </div>
           {preview && (
             <div className="attachment-preview">
@@ -134,6 +176,7 @@ export function CreatePostPopup({
                 type="button"
                 className="icon-button"
                 aria-label="Remove photo"
+                disabled={pending}
                 onClick={() => setImage(null)}
               >
                 <X size={17} />
@@ -163,6 +206,7 @@ export function CreatePostPopup({
                   <label key={person.id}>
                     <input
                       type="checkbox"
+                      disabled={pending}
                       checked={selectedUsers.includes(person.id)}
                       onChange={(e) =>
                         setSelectedUsers((ids) =>
@@ -187,8 +231,15 @@ export function CreatePostPopup({
               {error}
             </p>
           )}
+          <p className="compose-draft-note">
+            Your draft stays here while you browse. <span>Ctrl / ⌘ + Enter to share</span>
+          </p>
           <DialogFooter>
-            <Button type="submit" className="auth-submit" disabled={pending || !content.trim()}>
+            <Button
+              type="submit"
+              className="auth-submit"
+              disabled={pending || !content.trim() || characterCount > 500}
+            >
               {pending ? "Sharing…" : "Share your moment"}
               <ArrowUpRight size={18} />
             </Button>
