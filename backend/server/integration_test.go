@@ -130,6 +130,89 @@ func TestSocialJourneys(t *testing.T) {
 		t.Fatal("Private post exposed")
 	}
 	t.Log("PASS: private post audience")
+	request(nil, "POST", "/posts/save?post_id="+post, nil, 401)
+	request(nil, "GET", "/posts/all?feed=saved", nil, 401)
+	request(a, "GET", "/posts/all?feed=unknown", nil, 400)
+	request(a, "POST", "/posts/save", nil, 400)
+	request(a, "POST", "/posts/save?post_id=missing", nil, 404)
+	request(a, "POST", "/posts/save?post_id="+privatePost, nil, 404)
+	request(a, "POST", "/posts/save?post_id="+post, nil, 200)
+	request(a, "POST", "/posts/save?post_id="+post, nil, 200)
+	var savedCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM saved_posts WHERE user_id = ? AND post_id = ?`, ids[0], post).Scan(&savedCount); err != nil || savedCount != 1 {
+		t.Fatal("Saving is not idempotent", err, savedCount)
+	}
+	if !strings.Contains(request(a, "GET", "/posts/all?feed=saved", nil, 200).Body.String(), `"is_saved":true`) {
+		t.Fatal("Saved state missing")
+	}
+	if strings.Contains(request(b, "GET", "/posts/all?feed=saved", nil, 200).Body.String(), post) {
+		t.Fatal("Another member can read saved posts")
+	}
+	request(b, "DELETE", "/posts/save?post_id="+post+"&user_id="+ids[0], nil, 204)
+	if !strings.Contains(request(a, "GET", "/posts/all?feed=saved", nil, 200).Body.String(), post) {
+		t.Fatal("Another member removed a saved reference")
+	}
+	request(b, "PUT", "/posts/privacy", map[string]any{"post_id": post, "privacy": "private", "allowed_users": []string{}}, 200)
+	if strings.Contains(request(a, "GET", "/posts/all?feed=saved", nil, 200).Body.String(), post) {
+		t.Fatal("Saved reference bypassed changed visibility")
+	}
+	request(a, "POST", "/posts/save?post_id="+post, nil, 404)
+	request(b, "PUT", "/posts/privacy", map[string]any{"post_id": post, "privacy": "public"}, 200)
+	request(a, "DELETE", "/posts/save?post_id="+post, nil, 204)
+	request(a, "DELETE", "/posts/save?post_id="+post, nil, 204)
+	if strings.Contains(request(a, "GET", "/posts/all?feed=saved", nil, 200).Body.String(), post) {
+		t.Fatal("Removed save remains in collection")
+	}
+	ownedPost := decode(request(a, "POST", "/posts", map[string]string{"content": "A temporary moment.", "privacy": "public"}, 201))["post_id"].(string)
+	followingFeed := request(a, "GET", "/posts/all?feed=following", nil, 200).Body.String()
+	if !strings.Contains(followingFeed, post) || strings.Contains(followingFeed, ownedPost) || strings.Contains(followingFeed, privatePost) {
+		t.Fatal("Following feed did not respect connections and visibility")
+	}
+	if strings.Contains(request(b, "GET", "/posts/all?feed=following", nil, 200).Body.String(), ownedPost) {
+		t.Fatal("Following feed includes an unfollowed author")
+	}
+	request(b, "POST", "/posts/save?post_id="+ownedPost, nil, 200)
+	request(a, "DELETE", "/posts/delete?id="+ownedPost, nil, 200)
+	if err := db.QueryRow(`SELECT COUNT(*) FROM saved_posts WHERE post_id = ?`, ownedPost).Scan(&savedCount); err != nil || savedCount != 0 {
+		t.Fatal("Deleted post retained saved references", err)
+	}
+	t.Log("PASS: saved posts, idempotency, account isolation, changed visibility, deletion cleanup and following feed")
+	// Unicode limits count code points, not UTF-8 bytes or JavaScript UTF-16 units.
+	unicodeText := strings.Repeat("م", 499) + "🎉"
+	unicodePost := decode(request(a, "POST", "/posts", map[string]string{"content": unicodeText, "privacy": "public"}, 201))["post_id"].(string)
+	request(a, "POST", "/posts", map[string]string{"content": unicodeText + "م", "privacy": "public"}, 400)
+	unicodeComment := strings.Repeat("م", 249) + "🎉"
+	request(b, "POST", "/posts/comments", map[string]string{"post_id": unicodePost, "content": unicodeComment}, 201)
+	request(b, "POST", "/posts/comments", map[string]string{"post_id": unicodePost, "content": unicodeComment + "م"}, 400)
+	if !strings.Contains(request(b, "GET", "/posts/comments/all?post_id="+unicodePost, nil, 200).Body.String(), unicodeComment) {
+		t.Fatal("Unicode comment did not round-trip")
+	}
+	request(b, "POST", "/posts/like?post_id="+unicodePost, nil, 201)
+	request(b, "POST", "/posts/save?post_id="+unicodePost, nil, 200)
+	request(b, "DELETE", "/posts/delete?id="+unicodePost, nil, 403)
+	// Simulate the final delete failing after dependent rows were removed.
+	if _, err := db.Exec(`CREATE TEMP TRIGGER test_block_post_delete BEFORE DELETE ON posts BEGIN SELECT RAISE(ABORT, 'test failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	request(a, "DELETE", "/posts/delete?id="+unicodePost, nil, 500)
+	for _, table := range []string{"comments", "likes", "notifications", "saved_posts"} {
+		var count int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM `+table+` WHERE post_id = ?`, unicodePost).Scan(&count); err != nil || count == 0 {
+			t.Fatal("Failed delete lost related records", table, err)
+		}
+	}
+	if _, err := db.Exec(`DROP TRIGGER test_block_post_delete`); err != nil {
+		t.Fatal(err)
+	}
+	request(a, "DELETE", "/posts/delete?id="+unicodePost, nil, 200)
+	for _, table := range []string{"comments", "likes", "notifications", "saved_posts"} {
+		var count int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM `+table+` WHERE post_id = ?`, unicodePost).Scan(&count); err != nil || count != 0 {
+			t.Fatal("Deleted post left related records", table, err)
+		}
+	}
+	t.Log("PASS: Arabic and emoji at post/comment limits, over-limit rejection and retrieval")
+	t.Log("PASS: owner-only deletion with related records and transactional rollback")
 	group := decode(request(a, "POST", "/groups/create", map[string]any{"name": "The creative corner", "description": "A temporary test circle."}, 201))["group_id"].(string)
 	request(b, "POST", "/groups/join", map[string]any{"group_id": group}, 200)
 	if !strings.Contains(request(a, "GET", "/notifications/get", nil, 200).Body.String(), "group_join_request") {

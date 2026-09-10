@@ -51,6 +51,7 @@ func NewHandler(db *sql.DB) http.Handler {
 	// Posts
 	mux.HandleFunc("/posts", posts.CreatePostHandler(db))
 	mux.HandleFunc("/posts/all", posts.GetPostsHandler(db))
+	mux.HandleFunc("/posts/save", posts.SavePostHandler(db))
 	mux.HandleFunc("/posts/delete", posts.DeletePostHandler(db))
 	mux.HandleFunc("/posts/like", likes.AddLikeHandler(db))
 	mux.HandleFunc("/posts/unlike", likes.RemoveLikeHandler(db))
