@@ -84,6 +84,8 @@ For another API host, copy `frontend/.env.example` to `.env.local` and set `NEXT
 
 ## Built to be worked on
 
+Want a populated local feed? The [optional demo seed](docs/DEMO_DATA.md) adds clearly labeled fictional profiles, photo posts, comments and reactions to an isolated development database.
+
 ```text
 frontend/src/
   app/                  Routes, metadata, shared theme and auth campaign
