@@ -2,6 +2,18 @@
 
 Validated on 10 September 2026.
 
+## Final review
+
+- The 30-commit review branch passed both GitHub jobs before this review. Additional fixes below were found by reading the source and extending regression coverage.
+- Private conversation reads and new comments/likes now require the post's current audience. Tests verify unauthenticated access, inaccessible and missing posts, selected-user access, revoked access, pending versus accepted follows, and expired sessions.
+- Uploaded post, comment and circle media now requires an authenticated viewer with access to its parent. Tests verify author access, selected audiences, accepted circle membership, rejection of pending membership, no directory listing, HEAD responses and private/no-store caching.
+- Audience changes validate privacy values and replace permissions transactionally. Invalid user lists retain the existing audience; duplicate members are accepted without partial failures.
+- Comment responses handle absent avatars and images, produce an empty array for an empty conversation and report read failures.
+- Controlled dialogs now remember their opening control and restore keyboard focus on close, with a main-content fallback if a saved post disappears. Comment submission uses a synchronous in-flight guard.
+- The expanded Go integration suite and Go vet pass. Final frontend build, lint and formatting results are recorded with the delivered branch's GitHub checks.
+
+These fixes cover the reviewed post/conversation/media paths. They do not represent a comprehensive security audit. Browser interaction, screenshots, real devices and cross-browser motion remain unverified.
+
 ## Visual and social tools upgrade
 
 - Production build passed for all routes, including `/saved`, with TypeScript and lint validation. Standalone ESLint had no warnings or errors, and source formatting passed.

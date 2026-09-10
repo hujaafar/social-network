@@ -62,6 +62,10 @@ Post deletion removes legacy non-cascading comments, likes, notifications and au
 
 Post and comment limits count Unicode code points consistently in Go and the client (500 and 250 respectively). Multi-code-point graphemes, such as joined emoji, can count as more than one.
 
+Conversation reads, new comments and likes reuse the feed's audience predicate. Uploaded post and comment media inherits the same audience; circle post media requires the creator or an accepted member. The media handler authenticates requests, rejects directory access, and uses private/no-store responses instead of treating filenames as access tokens. Avatars remain a separate public media route.
+
+Audience updates validate the privacy mode and replace selected members in a transaction. Failed replacements retain the old audience, and repeated IDs are harmless. Controlled dialogs share focus restoration for button and keyboard openings, with a focusable main region as a fallback when the original post is removed.
+
 ## Configuration
 
 | Variable | Process | Default |

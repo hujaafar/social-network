@@ -42,6 +42,7 @@ The [exact prompts](IMAGE_PROMPTS.txt) are retained. Text and actions are real H
 - Moved the composer into the signed-in shell: drafts survive route navigation, image drops receive early validation, and Control/Command Enter submits.
 - Private caches and drafts are discarded when the signed-in workspace unmounts. Reactions prevent repeated in-flight requests and show failures.
 - Unified post/comment text limits for Unicode code points and fixed transactional deletion of posts with related comments, likes and notifications.
+- Final review added shared dialog focus restoration, synchronous comment submission protection, conversation/media audience checks and transactional audience updates.
 
 - Removed the mobile feed callback that threw an exception, the dead password-recovery link and the inactive GitHub login button.
 - Added loading, empty and failure states, keyboard labels, focus visibility and dialogs with focus management.
