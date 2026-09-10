@@ -1,74 +1,22 @@
 "use client";
-
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
-
-interface Group {
-  id: string;
-  name: string;
-  description: string;
-  creator_id: string;
-  created_at: string;
-}
-
+import { fetcher } from "@/lib/hooks/swr/fetcher";
+import { apiUrl } from "@/lib/api";
+import { Group } from "@/types/groupTypes";
 export function useGroups() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [joinedGroups, setJoinedGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const fetchGroups = useCallback(async () => {
+  const [error, setError] = useState("");
+  const refreshGroups = useCallback(async () => {
+    setError("");
     try {
-      const response = await axios.get("http://localhost:8080/groups", {
-        withCredentials: true,
-      });
-      setGroups(response.data);
-    } catch (error) {
-      console.log("Error fetching groups:", error);
-    }
+      const [all, joined] = await Promise.all([fetcher(apiUrl("/groups")), fetcher(apiUrl("/groups/user"))]);
+      setGroups(Array.isArray(all) ? all : []); setJoinedGroups(Array.isArray(joined) ? joined : []);
+    } catch { setError("We couldn’t load the circles. Please try again."); }
+    finally { setIsLoading(false); }
   }, []);
-
-  const fetchJoinedGroups = useCallback(async () => {
-    try {
-      const response = await axios.get("http://localhost:8080/groups/user", {
-        withCredentials: true,
-      });
-      setJoinedGroups(response.data);
-    } catch (error) {
-      console.log("Error fetching joined groups:", error);
-    }
-  }, []);
-
-  const searchGroups = useCallback(async (query: string) => {
-    setIsLoading(true);
-    try {
-      const response = await axios.get(
-        `http://localhost:8080/groups/search?query=${encodeURIComponent(
-          query
-        )}`,
-        {
-          withCredentials: true,
-        }
-      );
-      setGroups(response.data);
-    } catch (error) {
-      console.log("Error searching groups:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    Promise.all([fetchGroups(), fetchJoinedGroups()]).finally(() =>
-      setIsLoading(false)
-    );
-  }, [fetchGroups, fetchJoinedGroups]);
-
-  return {
-    groups,
-    joinedGroups,
-    isLoading,
-    searchGroups,
-    refreshGroups: fetchGroups,
-    refreshJoinedGroups: fetchJoinedGroups,
-  };
+  useEffect(() => { refreshGroups(); }, [refreshGroups]);
+  return { groups, joinedGroups, isLoading, error, refreshGroups, refreshJoinedGroups: refreshGroups };
 }
+

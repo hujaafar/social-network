@@ -1,4 +1,6 @@
 "use client";
+import { API_ORIGIN } from "@/lib/api";
+
 
 import React from "react";
 import axios from "axios";
@@ -20,14 +22,14 @@ export function DeletePostButton({ postId }: DeletePostButtonProps) {
       text: "Are you sure you want to delete this post?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#6C5CE7",
+      confirmButtonColor: "#bc4312",
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, delete it",
     });
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8080/posts/delete?id=${postId}`, {
+        await axios.delete(`${API_ORIGIN}/posts/delete?id=${postId}`, {
           withCredentials: true,
         });
 
@@ -35,7 +37,7 @@ export function DeletePostButton({ postId }: DeletePostButtonProps) {
           title: "Deleted!",
           text: "The post has been deleted.",
           icon: "success",
-          confirmButtonColor: "#6C5CE7",
+          confirmButtonColor: "#bc4312",
         });
 
         window.location.reload();

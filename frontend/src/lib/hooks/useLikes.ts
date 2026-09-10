@@ -1,3 +1,4 @@
+import { apiUrl } from "@/lib/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Post } from "@/types/post";
@@ -64,13 +65,13 @@ export function useLikes(
 
       if (isLiked) {
         // Unlike request
-        await axios.delete("http://localhost:8080/posts/unlike", {
+        await axios.delete(apiUrl("/posts/unlike"), {
           params: { post_id: postId },
           withCredentials: true,
         });
       } else {
         // Like request
-        await axios.post("http://localhost:8080/posts/like", null, {
+        await axios.post(apiUrl("/posts/like"), null, {
           params: { post_id: postId },
           withCredentials: true,
         });

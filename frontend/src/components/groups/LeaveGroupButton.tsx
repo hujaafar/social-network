@@ -1,5 +1,6 @@
-// components/groups/LeaveGroupButton.tsx
 "use client";
+import { apiUrl } from "@/lib/api";
+// components/groups/LeaveGroupButton.tsx
 
 import React from "react";
 import axios from "axios";
@@ -21,7 +22,7 @@ export function LeaveGroupButton({ groupId, onLeave }: LeaveGroupButtonProps) {
       text: "Are you sure you want to leave this group?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#6C5CE7", 
+      confirmButtonColor: "#bc4312", 
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, leave",
       cancelButtonText: "Cancel",
@@ -30,7 +31,7 @@ export function LeaveGroupButton({ groupId, onLeave }: LeaveGroupButtonProps) {
     // If the user clicked "Yes, leave"
     if (result.isConfirmed) {
       try {
-        const response = await axios.delete("http://localhost:8080/groups/leave", {
+        const response = await axios.delete(apiUrl("/groups/leave"), {
           data: { group_id: groupId },
           withCredentials: true,
         });
@@ -39,7 +40,7 @@ export function LeaveGroupButton({ groupId, onLeave }: LeaveGroupButtonProps) {
           title: "Left Group",
           text: response.data, 
           icon: "success",
-          confirmButtonColor: "#6C5CE7",
+          confirmButtonColor: "#bc4312",
         });
 
         if (onLeave) onLeave();
@@ -51,14 +52,14 @@ export function LeaveGroupButton({ groupId, onLeave }: LeaveGroupButtonProps) {
               title: "Forbidden",
               text: "You are the group creator. Please delete the group instead.",
               icon: "error",
-              confirmButtonColor: "#6C5CE7",
+              confirmButtonColor: "#bc4312",
             });
           } else {
             await MySwal.fire({
               title: "Error",
               text: error.response?.data || "Error leaving group.",
               icon: "error",
-              confirmButtonColor: "#6C5CE7",
+              confirmButtonColor: "#bc4312",
             });
           }
         } else {
@@ -67,7 +68,7 @@ export function LeaveGroupButton({ groupId, onLeave }: LeaveGroupButtonProps) {
             title: "Unexpected Error",
             text: "An unexpected error occurred while leaving the group.",
             icon: "error",
-            confirmButtonColor: "#6C5CE7",
+            confirmButtonColor: "#bc4312",
           });
         }
       }

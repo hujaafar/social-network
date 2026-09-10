@@ -1,6 +1,9 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
+import { apiUrl, API_ORIGIN } from "@/lib/api";
 
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,16 +42,13 @@ export default function PostView({ post, onClose }: PostViewProps) {
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
-  // Fetch comments when the post is opened
-  useEffect(() => {
-    fetchComments();
-  }, [post.id]);
 
-  const fetchComments = async () => {
+
+  const fetchComments = useCallback(async () => {
     setIsLoadingComments(true);
     try {
       const response = await axios.get(
-        `http://localhost:8080/groups/posts/comments?post_id=${post.id}`,
+        `${API_ORIGIN}/groups/posts/comments?post_id=${post.id}`,
         { withCredentials: true }
       );
       setComments(response.data || []);
@@ -57,7 +57,9 @@ export default function PostView({ post, onClose }: PostViewProps) {
     } finally {
       setIsLoadingComments(false);
     }
-  };
+  }, [post.id]);
+
+  useEffect(() => { fetchComments(); }, [fetchComments]);
 
   const handleAddComment = async () => {
     if (!newComment.trim())
@@ -65,7 +67,7 @@ export default function PostView({ post, onClose }: PostViewProps) {
 
     try {
       await axios.post(
-        "http://localhost:8080/groups/posts/comments/create",
+        apiUrl("/groups/posts/comments/create"),
         { post_id: post.id, content: newComment },
         { withCredentials: true }
       );
@@ -120,7 +122,7 @@ export default function PostView({ post, onClose }: PostViewProps) {
                 <div className="mt-2 whitespace-pre-line">{post.content}</div>
                 {post.image_url && (
                   <img
-                    src={`http://localhost:8080/uploads/${post.image_url}`}
+                    src={`${API_ORIGIN}/uploads/${post.image_url}`}
                     alt="Post"
                     className="mt-2 rounded-md w-full max-h-96 object-cover"
                   />
@@ -174,7 +176,7 @@ export default function PostView({ post, onClose }: PostViewProps) {
                   Cancel
                 </Button>
                 <Button
-                  className="bg-[#6C5CE7] text-white"
+                  className="bg-[#bc4312] text-white"
                   onClick={handleAddComment}
                 >
                   Add Comment

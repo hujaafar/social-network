@@ -1,5 +1,6 @@
-// components/groups/InviteButton.tsx
 "use client";
+import { apiUrl } from "@/lib/api";
+// components/groups/InviteButton.tsx
 
 import { useState } from "react";
 import axios from "axios";
@@ -34,7 +35,7 @@ export function InviteButton({ groupId, onInviteSuccess }: InviteButtonProps) {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:8080/groups/invite",
+        apiUrl("/groups/invite"),
         { group_id: groupId, nickname },
         { withCredentials: true }
       );
@@ -66,7 +67,7 @@ export function InviteButton({ groupId, onInviteSuccess }: InviteButtonProps) {
       )}
      <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-[#6C5CE7] text-white">
+        <Button variant="outline" className="bg-[#bc4312] text-white">
           Invite Member
         </Button>
       </DialogTrigger>

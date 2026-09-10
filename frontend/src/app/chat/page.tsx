@@ -1,87 +1,45 @@
 "use client";
-
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { UserList } from "@/components/chat/UserList";
 import { ChatWindow } from "@/components/chat/ChatWindow";
+import { useChatSocket } from "@/lib/ChatSocketProvider";
 import type { User } from "@/types/chat";
 import Cookies from "js-cookie";
-
+import { apiUrl, socketUrl } from "@/lib/api";
 export default function ChatPage() {
-  console.log("ChatPage mount");
-  const actualUserId = Cookies.get("user_id") || "";
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const currentUserId = Cookies.get("user_id") || "";
+  const [selected, setSelected] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
-
-  // Online status socket in a ref so it doesn't re-open multiple times
-  const onlineSocketRef = useRef<WebSocket | null>(null);
-
+  const { connected } = useChatSocket();
+  const [directoryReady, setDirectoryReady] = useState(false);
   useEffect(() => {
-    if (onlineSocketRef.current) return; // already connected
-
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const connectWebSocket = () => {
-      const ws = new WebSocket("ws://localhost:8080/ws/online");
-      onlineSocketRef.current = ws;
-
-      ws.onopen = () => {
-        console.log("✅ Connected to WebSocket: /ws/online");
-      };
-
-      ws.onmessage = (event) => {
-        console.log("📩 Raw WebSocket message:", event.data);
+    let disposed = false;
+    let socket: WebSocket;
+    let timer: ReturnType<typeof setTimeout>;
+    function connect() {
+      if (disposed) return;
+      socket = new WebSocket(socketUrl("/ws/online"));
+      socket.onmessage = event => {
         try {
-          const trimmedData =
-            typeof event.data === "string" ? event.data.trim() : "";
-          if (trimmedData.startsWith("{") || trimmedData.startsWith("[")) {
-            const receivedUsers = JSON.parse(trimmedData);
-            const formattedUsers: User[] = receivedUsers.map((user: User) => ({
-              id: user.id,
-              name: user.nickname || "You",
-              avatar: user.avatar
-                ? `http://localhost:8080/avatars/${user.avatar}`
-                : "/default-avatar.png",
-              online: user.online,
-            }));
-            setUsers(formattedUsers);
-          } else {
-            console.warn("Received non-JSON message:", event.data);
-          }
-        } catch (error) {
-          console.log("❌ Error parsing WebSocket message:", error, event.data);
-        }
+          const data = JSON.parse(event.data);
+          if (!Array.isArray(data)) return;
+          setUsers(data.filter(u => u.id !== currentUserId).map(u => ({ id: u.id, name: u.nickname || "Community member", avatar: u.avatar ? apiUrl(`/avatars/${u.avatar}`) : "/profile.png", online: u.online })));
+          setDirectoryReady(true);
+        } catch { /* Ignore non-directory frames. */ }
       };
-
-      ws.onerror = (error) => {
-        console.log("❌ WebSocket error:", error);
-        reconnectTimer = setTimeout(connectWebSocket, 5000);
-      };
-
-      ws.onclose = () => {
-        console.warn("⚠️ /ws/online connection closed. Reconnecting in 5s...");
-        reconnectTimer = setTimeout(connectWebSocket, 5000);
-      };
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (onlineSocketRef.current) {
-        onlineSocketRef.current.close();
-        onlineSocketRef.current = null;
-      }
-    };
-  }, []);
-
-  return (
-    <div className="flex h-screen bg-gray-50">
-      <UserList
-        users={users}
-        onSelectUser={setSelectedUser}
-        selectedUser={selectedUser}
-      />
-      <ChatWindow currentUserId={actualUserId} user={selectedUser} />
+      socket.onerror = () => socket.close();
+      socket.onclose = () => { if (!disposed) timer = setTimeout(connect, 4000); };
+    }
+    connect();
+    return () => { disposed = true; clearTimeout(timer); socket?.close(); };
+  }, [currentUserId]);
+  return <div className="page-wrap messages-page">
+    <header className="page-intro"><div><span className="eyebrow">SAY A LITTLE MORE</span><h1 className="page-title">Good <em>conversations.</em></h1></div><span className="connection-status"><span className={connected ? "connected" : ""} />{connected ? "Connected" : "Connecting…"}</span></header>
+    <div className={`messenger ${selected ? "conversation-open" : ""}`}>
+      <UserList users={users} onSelectUser={setSelected} selectedUser={selected} loading={!directoryReady} />
+      <div className="conversation-panel">{selected && <button className="back-to-chats" onClick={() => setSelected(null)}><ArrowLeft size={17} /> All conversations</button>}<ChatWindow currentUserId={currentUserId} user={selected ? users.find(u => u.id === selected.id) || selected : null} /></div>
     </div>
-  );
+  </div>;
 }
+

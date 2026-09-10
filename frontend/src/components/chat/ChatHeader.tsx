@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import type { User } from "@/types/chat"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"

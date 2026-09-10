@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
+import { API_ORIGIN } from "@/lib/api";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatPostDate } from "@/lib/utils";
 
@@ -17,7 +19,7 @@ interface Comment {
 }
 
 export function CommentItem({ comment }: CommentItemProps) {
-  console.log("Comment data:", comment);
+
   // Use comment.avatar if present, otherwise try comment.userProfileImage
   const avatarSource = comment.avatar;
 
@@ -30,8 +32,8 @@ export function CommentItem({ comment }: CommentItemProps) {
         />
         <AvatarFallback>{comment.nickname?.charAt(0)}</AvatarFallback>
       </Avatar>
-      <div className="flex flex-col bg-gray-100 px-4 py-3 rounded-xl w-full">
-        <div className="flex justify-between items-center mb-1">
+      <div className="flex flex-col bg-gray-100 px-4 py-3 rounded-xl min-w-0 flex-1">
+        <div className="flex flex-wrap gap-2 justify-between items-center mb-1">
           <h4 className="font-semibold text-gray-900">{comment.nickname}</h4>
           <p className="text-xs text-gray-500">
             {comment.created_at
@@ -45,7 +47,7 @@ export function CommentItem({ comment }: CommentItemProps) {
         {comment.image_url && (
           <div className="mt-3 rounded-lg border border-gray-300 overflow-hidden">
             <img
-              src={`http://localhost:8080/uploads/${comment.image_url}`}
+              src={`${API_ORIGIN}/uploads/${comment.image_url}`}
               alt="Comment attachment"
               className="w-full max-w-md object-cover rounded-lg"
             />

@@ -1,4 +1,7 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
+import { apiUrl, API_ORIGIN } from "@/lib/api";
+
 
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -47,12 +50,14 @@ export default function SettingsPage() {
       setIsPrivate(user.private);
       // Use the correct URL for serving avatars.
       if (user.avatar) {
-        const url = `http://localhost:8080/avatars/${user.avatar}`;
+        const url = `${API_ORIGIN}/avatars/${user.avatar}`;
         setAvatarPreview(url);
-        console.log("Avatar preview URL:", url);
+        
       }
     }
   }, [user]);
+
+  useEffect(() => () => { if (avatarPreview.startsWith("blob:")) URL.revokeObjectURL(avatarPreview); }, [avatarPreview]);
 
   // Handler for avatar file input change.
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,7 +83,7 @@ export default function SettingsPage() {
         formData.append("about_me", aboutMe);
         formData.append("avatar", avatarFile);
         await axios.put(
-          "http://localhost:8080/users/profile/update",
+          apiUrl("/users/profile/update"),
           formData,
           {
             withCredentials: true,
@@ -87,7 +92,7 @@ export default function SettingsPage() {
         );
       } else {
         await axios.put(
-          "http://localhost:8080/users/profile/update",
+          apiUrl("/users/profile/update"),
           {
             first_name: firstName,
             last_name: lastName,
@@ -124,7 +129,7 @@ export default function SettingsPage() {
     setMessageType("");
     try {
       await axios.put(
-        "http://localhost:8080/users/profile/privacy",
+        apiUrl("/users/profile/privacy"),
         { private: !isPrivate },
         { withCredentials: true }
       );
@@ -150,12 +155,13 @@ export default function SettingsPage() {
   if (isError) return <div>Error loading profile.</div>;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="page-wrap settings-page">
+      <header className="page-intro"><div><span className="eyebrow">MAKE YOURSELF AT HOME</span><h1 className="page-title">Your space.<br /><em>Your rules.</em></h1><p>Update your details and decide who sees your world.</p></div></header>
       {/* Main Content Area */}
-      <div className="flex-1 max-w-2xl mx-auto p-4">
+      <div className="settings-content">
         <Card>
           <CardHeader>
-            <CardTitle className="text-[#6C5CE7]">Profile Settings</CardTitle>
+            <CardTitle className="text-[#bc4312]">The essentials</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleProfileUpdate} className="space-y-4">
@@ -208,13 +214,13 @@ export default function SettingsPage() {
                   <Input
                     id="avatar"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/gif"
                     onChange={handleAvatarChange}
                     className="w-full"
                   />
                 </div>
               </div>
-              <Button type="submit" className="bg-[#6C5CE7] text-white">
+              <Button type="submit" className="bg-[#bc4312] text-white">
                 Update Profile
               </Button>
             </form>
@@ -231,7 +237,7 @@ export default function SettingsPage() {
               </p>
               <Button
                 onClick={handleTogglePrivacy}
-                className="bg-[#6C5CE7] text-white"
+                className="bg-[#bc4312] text-white"
               >
                 Switch to {isPrivate ? "Public" : "Private"} Account
               </Button>

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Dispatch, SetStateAction, useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
@@ -37,7 +37,7 @@ export function PasswordInput({
           placeholder={placeholder}
           required={required}
           autoComplete={autoComplete}
-          className="pr-10 transition-all border-gray-200 group-hover:border-[#6C5CE7]/50 focus:border-[#6C5CE7] focus:ring-[#6C5CE7]/20"
+          className="pr-10 transition-all border-gray-200 group-hover:border-[#bc4312]/50 focus:border-[#bc4312] focus:ring-[#bc4312]/20"
           value={value}
           onChange={(e) => setValue(e.target.value)} // Ensure setValue is used correctly
         />
@@ -47,7 +47,7 @@ export function PasswordInput({
           aria-pressed={showPassword}
           variant="ghost"
           size="icon"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#6C5CE7]"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#bc4312]"
           onClick={() => setShowPassword(!showPassword)}
         >
           {showPassword ? (

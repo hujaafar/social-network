@@ -10,10 +10,11 @@ export function EditorialImage({ src, alt, priority = false }: { src: string; al
   // Move only the photograph; controls retain their normal layout and hit areas.
   const y = useTransform(scrollYProgress, [0, 1], ["-5%", "5%"]);
   const scale = useTransform(scrollYProgress, [0, 1], [1.12, 1.02]);
-  return <div ref={ref} className="editorial-image">
+  const clipPath = useTransform(scrollYProgress, [0, .5, 1], ["inset(5% 4% 0% 4% round 16px)", "inset(0% 0% 0% 0% round 0px)", "inset(0% 0% 0% 0% round 0px)"]);
+  return <motion.div ref={ref} className="editorial-image" style={reduceMotion ? undefined : { clipPath }}>
     <motion.div className="editorial-image-layer" style={reduceMotion ? undefined : { y, scale }}>
       <Image src={src} alt={alt} fill sizes="(max-width: 760px) 100vw, 60vw" priority={priority} />
     </motion.div>
-  </div>;
+  </motion.div>;
 }
 

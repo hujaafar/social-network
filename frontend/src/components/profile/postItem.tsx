@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
+import { API_ORIGIN } from "@/lib/api";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -19,7 +21,7 @@ export default function PostItem({ post }: PostItemProps) {
           <AvatarImage
             src={
               post.avatar
-                ? `http://localhost:8080/avatars/${post.avatar}`
+                ? `${API_ORIGIN}/avatars/${post.avatar}`
                 : "/profile.png"
             }
             alt={post.nickname}
@@ -40,7 +42,7 @@ export default function PostItem({ post }: PostItemProps) {
             src={
               post.image_url.startsWith("http")
                 ? post.image_url
-                : `http://localhost:8080/uploads/${post.image_url}`
+                : `${API_ORIGIN}/uploads/${post.image_url}`
             }
             alt="Post"
             className="w-full rounded-lg mb-4"

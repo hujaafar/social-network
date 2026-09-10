@@ -1,4 +1,6 @@
 "use client";
+import { apiUrl, API_ORIGIN, socketUrl } from "@/lib/api";
+
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -62,7 +64,7 @@ export default function GroupView() {
 
   // WebSocket hook
   const { socket, isConnected, sendMessage } = useWebSocket(
-    `ws://localhost:8080/groups/chat?group_id=${params.id}`
+    `${socketUrl("")}/groups/chat?group_id=${params.id}`
   );
 
   // Fetch group data
@@ -77,19 +79,19 @@ export default function GroupView() {
         const [groupResponse, postsResponse, membersResponse, eventsResponse] =
           await Promise.all([
             axios.get(
-              `http://localhost:8080/groups/details?group_id=${groupId}`,
+              `${API_ORIGIN}/groups/details?group_id=${groupId}`,
               { withCredentials: true }
             ),
             axios.get(
-              `http://localhost:8080/groups/posts?group_id=${groupId}`,
+              `${API_ORIGIN}/groups/posts?group_id=${groupId}`,
               { withCredentials: true }
             ),
             axios.get(
-              `http://localhost:8080/groups/members?group_id=${groupId}`,
+              `${API_ORIGIN}/groups/members?group_id=${groupId}`,
               { withCredentials: true }
             ),
             axios.get(
-              `http://localhost:8080/groups/events?group_id=${groupId}`,
+              `${API_ORIGIN}/groups/events?group_id=${groupId}`,
               { withCredentials: true }
             ),
           ]);
@@ -137,7 +139,7 @@ export default function GroupView() {
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/groups/posts/create",
+        apiUrl("/groups/posts/create"),
         formData,
         {
           withCredentials: true,
@@ -176,7 +178,7 @@ export default function GroupView() {
           events.map((event) =>
             axios
               .get(
-                `http://localhost:8080/groups/events/rsvps?event_id=${event.id}`,
+                `${API_ORIGIN}/groups/events/rsvps?event_id=${event.id}`,
                 { withCredentials: true }
               )
               .catch(() => null)
@@ -206,7 +208,7 @@ export default function GroupView() {
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/groups/events/create",
+        apiUrl("/groups/events/create"),
         {
           group_id: params.id,
           title: eventTitle,
@@ -244,7 +246,7 @@ export default function GroupView() {
   const handleRSVP = async (eventId: string, status: "going" | "not going") => {
     try {
       await axios.post(
-        "http://localhost:8080/groups/events/rsvp",
+        apiUrl("/groups/events/rsvp"),
         { event_id: eventId, status },
         { withCredentials: true }
       );
@@ -278,7 +280,7 @@ export default function GroupView() {
     const fetchMessages = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8080/groups/chat/messages?group_id=${params.id}`,
+          `${API_ORIGIN}/groups/chat/messages?group_id=${params.id}`,
           { withCredentials: true }
         );
         setMessages(response.data);
@@ -353,19 +355,19 @@ export default function GroupView() {
           onClose={() => setAlert(null)}
         />
       )}
-      <div className="min-h-screen bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="page-wrap group-detail-page">
+        <div className="group-detail-inner">
           <Card className="border-none shadow-sm">
-            <CardHeader className="bg-[#6C5CE7] text-white rounded-t-lg p-6">
-              <div className="flex items-center justify-between">
+            <CardHeader className="group-detail-heading">
+              <div className="group-heading-row">
                 <div>
-                  <CardTitle className="text-2xl">{group.name}</CardTitle>
-                  <CardDescription className="text-slate-200 mt-2">
+                  <CardTitle className="page-title">{group.name}</CardTitle>
+                  <CardDescription className="group-created">
                     Created on{" "}
                     {new Date(group.created_at).toLocaleDateString()}
                   </CardDescription>
                 </div>
-                <div className="flex gap-4">
+                <div className="group-heading-actions">
   <InviteButton groupId={group.id} onInviteSuccess={() => {}} />
 
   <LeaveGroupButton
@@ -385,7 +387,7 @@ export default function GroupView() {
             <CardContent className="p-6">
               <p className="text-gray-700 mb-6">{group.description}</p>
               <Tabs defaultValue="posts" className="w-full">
-                <TabsList className="w-full max-w-md grid grid-cols-4 gap-4 mx-auto mb-6">
+                <TabsList className="w-full grid grid-cols-4 gap-1 mb-6 group-tabs">
                   <TabsTrigger value="posts">
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Posts
@@ -453,7 +455,7 @@ export default function GroupView() {
                               <AvatarImage
                                 src={
                                   member.avatar
-                                    ? `http://localhost:8080/avatars/${member.avatar}`
+                                    ? `${API_ORIGIN}/avatars/${member.avatar}`
                                     : "/profile.png"
                                 }
                               />

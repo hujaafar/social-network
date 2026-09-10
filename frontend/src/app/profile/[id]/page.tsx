@@ -1,4 +1,6 @@
-"use client"; 
+"use client";
+import { apiUrl } from "@/lib/api";
+ 
 
 import { useParams } from "next/navigation";
 import { useUserProfile } from "@/lib/hooks/swr/getUserProfile";
@@ -22,7 +24,7 @@ export default function ProfilePage() {
   const followRequest = async (followedId: string) => {
     try {
       const response = await axios.post(
-        "http://localhost:8080/follow",
+        apiUrl("/follow"),
         { followed_id: followedId },
         {
           withCredentials: true,
@@ -51,7 +53,7 @@ export default function ProfilePage() {
           </p>
           {!user.is_my_profile && user.pending==="0" && !isRequested && (
             <Button 
-            className="mt-4 bg-[#6C5CE7] hover:bg-[#6C5CE7]/90 text-white"
+            className="mt-4 bg-[#bc4312] hover:bg-[#bc4312]/90 text-white"
             onClick={() => followRequest(user.id)}
           >
             Request to Follow

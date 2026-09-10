@@ -1,4 +1,6 @@
 "use client";
+import { apiUrl } from "@/lib/api";
+
 
 import { useState } from "react";
 import {
@@ -26,16 +28,18 @@ export function CreateGroupDialog({
   refreshGroups,
 }: CreateGroupDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setIsLoading(true);
+    if (isLoading) return;
+    setIsLoading(true); setError("");
 
     try {
       await axios.post(
-        "http://localhost:8080/groups/create",
+        apiUrl("/groups/create"),
         { name, description },
         { withCredentials: true }
       );
@@ -43,8 +47,8 @@ export function CreateGroupDialog({
       setName("");
       setDescription("");
       refreshGroups(); // Refresh groups after creation
-    } catch (error) {
-      console.log("Error creating group:", error);
+    } catch {
+      setError("Your circle could not be created. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -52,16 +56,16 @@ export function CreateGroupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="post-compose-dialog">
         <DialogHeader>
-          <DialogTitle>Create New Group</DialogTitle>
+          <DialogTitle>Start a circle.</DialogTitle>
           <DialogDescription>
-            Provide a name and description for your group.
+            Bring people together around something you love.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Group Name</Label>
+            <Label htmlFor="name">Circle name</Label>
             <Input
               id="name"
               value={name}
@@ -78,6 +82,7 @@ export function CreateGroupDialog({
               required
             />
           </div>
+          {error && <p role="alert" className="inline-error">{error}</p>}
           <div className="flex justify-end gap-4">
             <Button
               type="button"

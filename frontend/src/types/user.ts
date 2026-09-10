@@ -10,4 +10,6 @@ export interface User {
   private: boolean;
   is_following: boolean;
   is_my_profile: boolean;
+  about_me?: string;
+  pending?: string;
 }

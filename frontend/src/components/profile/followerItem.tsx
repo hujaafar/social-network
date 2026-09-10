@@ -1,3 +1,4 @@
+import { API_ORIGIN } from "@/lib/api";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +20,7 @@ export default function FollowerItem({ follower }: FollowerProps) {
           <AvatarImage
             src={
               follower.avatar
-                ? `http://localhost:8080/avatars/${follower.avatar}`
+                ? `${API_ORIGIN}/avatars/${follower.avatar}`
                 : "/profile.png"
             }
             alt={follower.nickname}

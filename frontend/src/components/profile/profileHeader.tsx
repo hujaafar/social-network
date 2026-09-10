@@ -1,164 +1,39 @@
+"use client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import axios from "axios";
-import { CalendarIcon, UserIcon, UsersIcon, LockIcon } from "lucide-react";
-import Alert from "@/components/ui/alert";
+import { CalendarDays, LockKeyhole, Globe2, ArrowUpRight } from "lucide-react";
+import { EditorialImage } from "@/components/design/editorial-image";
 import { useState } from "react";
+import { useSWRConfig } from "swr";
+import axios from "axios";
 import Link from "next/link";
 import { User } from "@/types/user";
-
-interface ProfileHeaderProps {
-  user: User;
+import { apiUrl } from "@/lib/api";
+export default function ProfileHeader({ user }: { user: User }) {
+  const { mutate } = useSWRConfig();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  async function follow() {
+    if (pending) return; setPending(true); setError("");
+    try {
+      if (user.is_following) await axios.delete(apiUrl("/unfollow"), { data: { followed_id: user.id }, withCredentials: true });
+      else await axios.post(apiUrl("/follow"), { followed_id: user.id }, { withCredentials: true });
+      await mutate(apiUrl(`/users/profile?user_id=${user.id}`));
+    } catch { setError("We couldn’t update this connection. Please try again."); }
+    finally { setPending(false); }
+  }
+  return <section className="profile-card">
+    <div className="profile-cover"><EditorialImage src="/images/common-studio.webp" alt="" /><span>A LITTLE ABOUT ME.</span></div>
+    <div className="profile-details">
+      <div className="profile-identity"><Avatar className="profile-avatar"><AvatarImage src={user.avatar ? apiUrl(`/avatars/${user.avatar}`) : "/profile.png"} alt="" /><AvatarFallback>{user.first_name?.[0]}{user.last_name?.[0]}</AvatarFallback></Avatar>
+        {user.is_my_profile ? <Button asChild variant="outline"><Link href="/settings">Edit profile <ArrowUpRight size={16} /></Link></Button> : <Button disabled={pending || user.pending === "1"} onClick={follow}>{pending ? "Updating…" : user.is_following ? "Unfollow" : user.pending === "1" ? "Request sent" : user.private ? "Request to follow" : "Follow"}</Button>}
+      </div>
+      <span className="eyebrow">@{user.nickname}</span><h1>{user.first_name} {user.last_name}</h1>
+      {user.about_me && <p className="profile-bio">{user.about_me}</p>}
+      <div className="profile-meta"><span>{user.private ? <LockKeyhole size={15} /> : <Globe2 size={15} />}{user.private ? "Private profile" : "Public profile"}</span><span><CalendarDays size={15} />Born {new Date(user.date_of_birth + (user.date_of_birth.length === 10 ? "T12:00:00" : "")).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})}</span></div>
+      <div className="profile-stats"><span><strong>{user.followers_count || 0}</strong> followers</span><span><strong>{user.following_count || 0}</strong> following</span></div>
+      {error && <p role="alert" className="inline-error">{error}</p>}
+    </div>
+  </section>;
 }
 
-export default function ProfileHeader({
-  user: initialUser,
-}: ProfileHeaderProps) {
-  const [user, setUser] = useState<User>(initialUser);
-  const [alert, setAlert] = useState<{
-    type: "success" | "error" | "info";
-    message: string;
-  } | null>(null);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const refreshProfile = async () => {
-    try {
-      const response = await axios.get(
-        `http://localhost:8080/users/profile?user_id=${user.id}`,
-        {
-          withCredentials: true,
-        }
-      );
-      setUser(response.data);
-    } catch (error) {
-      console.log("Error fetching profile data", error);
-    }
-  };
-
-  const followUser = async () => {
-    try {
-      await axios.post(
-        "http://localhost:8080/follow",
-        { followed_id: user.id },
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-      setAlert({ type: "success", message: "User followed successfully!" });
-      refreshProfile(); // Fetch updated user data
-      location.reload();
-    } catch (error) {
-      console.log(error);
-      setAlert({ type: "error", message: "Error following user" });
-    }
-  };
-
-  const unfollowUser = async () => {
-    try {
-      await axios.delete("http://localhost:8080/unfollow", {
-        data: { followed_id: user.id },
-        withCredentials: true,
-        headers: { "Content-Type": "application/json" },
-      });
-      setAlert({ type: "success", message: "User unfollowed successfully!" });
-      location.reload();
-      refreshProfile(); // Fetch updated user data
-    } catch (error) {
-      console.log(error);
-      setAlert({ type: "error", message: "Error unfollowing user" });
-    }
-  };
-
-  return (
-    <>
-      {alert && (
-        <Alert
-          title={alert.type === "success" ? "Success" : "Error"}
-          message={alert.message}
-          type={alert.type}
-          duration={5000}
-          onClose={() => setAlert(null)}
-        />
-      )}
-      <Card className="mb-8">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center md:flex-row md:items-start gap-6">
-            <Avatar className="w-32 h-32">
-              <AvatarImage
-                src={
-                  user.avatar
-                    ? `http://localhost:8080/avatars/${user.avatar}`
-                    : "/profile.png"
-                }
-                alt={`${user.first_name} ${user.last_name}`}
-              />
-              <AvatarFallback>
-                {user.first_name[0]}
-                {user.last_name[0]}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">
-                {user.first_name} {user.last_name}
-              </h1>
-              <p className="text-xl text-muted-foreground mb-4">
-                @{user.nickname}
-              </p>
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <CalendarIcon className="w-4 h-4" />
-                  <span>Joined {formatDate(user.date_of_birth)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <UserIcon className="w-4 h-4" />
-                  <span>{user.followers_count} Followers</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <UsersIcon className="w-4 h-4" />
-                  <span>{user.following_count} Following</span>
-                </div>
-                {user.private && (
-                  <div className="flex items-center gap-1">
-                    <LockIcon className="w-4 h-4" />
-                    <span>Private Account</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            {user.is_my_profile ? (
-              <Link href="/settings">
-                <Button variant="outline" className="mt-4">
-                  Edit Profile
-                </Button>
-              </Link>
-            ) : !user.is_following ? (
-              <Button
-                className="bg-[#6C5CE7] hover:bg-[#6C5CE7]/90 text-white"
-                onClick={followUser}
-              >
-                {user.private ? "Request to Follow" : "Follow"}
-              </Button>
-            ) : (
-              <Button
-                className="bg-[#6C5CE7] hover:bg-[#6C5CE7]/90 text-white"
-                onClick={unfollowUser}
-              >
-                Unfollow
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </>
-  );
-}
