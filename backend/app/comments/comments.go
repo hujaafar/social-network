@@ -10,6 +10,7 @@ import (
 	"social-network/app/notifications"
 	"social-network/app/sessions"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -57,7 +58,7 @@ func AddCommentHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Enforce word count limit (max 250 characters)
-		if len(content) > 250 {
+		if utf8.RuneCountInString(content) > 250 {
 			http.Error(w, "Content cannot exceed 250 characters", http.StatusBadRequest)
 			return
 		}
@@ -245,7 +246,6 @@ func GetCommentsByPostHandler(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(comments)
 	}
 }
-
 
 // Helper function to check allowed file extensions
 func contains(slice []string, item string) bool {

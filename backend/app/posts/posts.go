@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"social-network/app/sessions"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -60,7 +61,7 @@ func CreatePostHandler(db *sql.DB) http.HandlerFunc {
 			http.Error(w, "Content cannot be empty", http.StatusBadRequest)
 			return
 		}
-		if len(content) > 500 {
+		if utf8.RuneCountInString(content) > 500 {
 			http.Error(w, "Content cannot exceed 500 characters", http.StatusBadRequest)
 			return
 		}
