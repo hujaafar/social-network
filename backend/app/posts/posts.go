@@ -288,22 +288,31 @@ func DeletePostHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Delete the post from the database
-		query := `DELETE FROM posts WHERE id = ?`
-		_, err = db.Exec(query, postID)
+		// Older tables do not cascade. Remove references in one transaction so a
+		// failure cannot leave a live post with its conversations partly deleted.
+		tx, err := db.BeginTx(r.Context(), nil)
 		if err != nil {
 			http.Error(w, "Failed to delete post", http.StatusInternalServerError)
 			return
 		}
-
-		// Clean up private permissions for the post
-		_, err = db.Exec(`DELETE FROM post_privacy WHERE post_id = ?`, postID)
-		if err != nil {
-			http.Error(w, "Failed to delete post privacy settings", http.StatusInternalServerError)
+		defer tx.Rollback()
+		for _, query := range []string{
+			`DELETE FROM notifications WHERE post_id = ?`,
+			`DELETE FROM comments WHERE post_id = ?`,
+			`DELETE FROM likes WHERE post_id = ?`,
+			`DELETE FROM post_privacy WHERE post_id = ?`,
+			`DELETE FROM posts WHERE id = ?`,
+		} {
+			if _, err := tx.ExecContext(r.Context(), query, postID); err != nil {
+				http.Error(w, "Failed to delete post", http.StatusInternalServerError)
+				return
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			http.Error(w, "Failed to delete post", http.StatusInternalServerError)
 			return
 		}
 
 		w.Write([]byte("Post deleted successfully"))
 	}
 }
-
