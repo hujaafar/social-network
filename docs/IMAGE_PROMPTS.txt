@@ -29,4 +29,3 @@ Composition/framing: landscape 3:2. Concentrate all four people and their heads 
 Lighting/mood: blue hour, electric cobalt sky, gritty direct flash highlights, spontaneous and intimate.
 Color palette: cobalt blue, dark negative space, muted red court; a tiny acid-yellow clothing accent.
 Constraints: output only the photograph, no text, no logos, no watermarks, no UI, no generated typography. Exactly four clearly adult people.
-

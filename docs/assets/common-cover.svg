@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="600" viewBox="0 0 1440 600" role="img" aria-labelledby="title description">
+  <title id="title">Common — Good people. Great stories.</title>
+  <desc id="description">The Common wordmark in white, with an electric lime asterisk on charcoal.</desc>
+  <rect width="1440" height="600" rx="24" fill="#161914"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="64" y="66" font-size="17" letter-spacing="3" fill="#b4bea3">GO + NEXT.JS / SOCIAL NETWORK</text>
+    <text x="64" y="277" font-size="210" font-weight="700" letter-spacing="-15" fill="#f4f5ee">common</text>
+    <text x="72" y="382" font-size="57" font-weight="700" letter-spacing="-2" fill="#d9ff57">GOOD PEOPLE.</text>
+    <text x="72" y="446" font-size="57" font-weight="700" letter-spacing="-2" fill="#d9ff57">GREAT STORIES.</text>
+    <path d="M64 504h1312" stroke="#3a4230"/>
+    <text x="64" y="553" font-size="18" letter-spacing="2" fill="#b4bea3">YOUR FEED</text>
+    <text x="355" y="553" font-size="18" letter-spacing="2" fill="#b4bea3">YOUR CIRCLES</text>
+    <text x="704" y="553" font-size="18" letter-spacing="2" fill="#b4bea3">YOUR CONVERSATIONS</text>
+    <text x="1287" y="553" font-size="18" letter-spacing="2" fill="#d9ff57">001 ↗</text>
+  </g>
+  <g stroke="#d9ff57" stroke-width="43" stroke-linecap="round" transform="translate(1170 265) rotate(15)">
+    <path d="M0-115V115M-100-57.5l200 115M-100 57.5l200-115"/>
+  </g>
+</svg>
