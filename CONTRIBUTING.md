@@ -1,6 +1,6 @@
 # Contributing to Common
 
-Start with the [setup guide](README.md#run-common) and [architecture notes](docs/ARCHITECTURE.md). The redesign currently lives on `feat/common-social-redesign`; use that branch as the base for changes to the new interface while its pull request is open.
+Start with the [setup guide](README.md#run-common) and [architecture notes](docs/ARCHITECTURE.md). The Common redesign is merged into `master`; create focused feature branches from the latest `master`.
 
 ## Make a focused change
 

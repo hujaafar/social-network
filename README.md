@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/hujaafar/social-network/actions/workflows/quality.yml"><img src="https://github.com/hujaafar/social-network/actions/workflows/quality.yml/badge.svg?branch=feat%2Fcommon-social-redesign" alt="Quality checks" /></a>
+  <a href="https://github.com/hujaafar/social-network/actions/workflows/quality.yml"><img src="https://github.com/hujaafar/social-network/actions/workflows/quality.yml/badge.svg?branch=master" alt="Quality checks" /></a>
   <img src="https://img.shields.io/badge/Next.js-15-161914?logo=nextdotjs&amp;logoColor=white" alt="Next.js 15" />
   <img src="https://img.shields.io/badge/Go-1.22+-161914?logo=go&amp;logoColor=d9ff57" alt="Go 1.22 or newer" />
   <img src="https://img.shields.io/badge/SQLite-persistence-161914?logo=sqlite&amp;logoColor=d9ff57" alt="SQLite persistence" />
@@ -23,8 +23,6 @@
 **Common** brings your people, conversations and interests together. An editorial social network with a cinematic visual identity, a responsive interface and a real Go/SQLite backend.
 
 The experience pairs electric lime, charcoal and condensed typography with original campaign photography. Native scrolling, restrained image depth, responsive conversation layouts and reduced-motion support keep the interface usable while giving it a distinctive character.
-
-> The redesign is available on [`feat/common-social-redesign`](https://github.com/hujaafar/social-network/tree/feat/common-social-redesign), under review in [PR #1](https://github.com/hujaafar/social-network/pull/1).
 
 ![Original Common after-hours campaign photograph](frontend/public/images/common-afterhours.webp)
 
