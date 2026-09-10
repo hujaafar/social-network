@@ -136,7 +136,7 @@ func NewHandler(db *sql.DB) http.Handler {
 		w.Write([]byte("This is a protected resource"))
 	})))
 
-	mux.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
+	mux.Handle("/uploads/", posts.UploadHandler(db, "uploads"))
 	mux.Handle("/avatars/", http.StripPrefix("/avatars/", http.FileServer(http.Dir("avatars"))))
 
 	return CORSMiddleware(mux)

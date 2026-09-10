@@ -125,11 +125,68 @@ func TestSocialJourneys(t *testing.T) {
 		t.Fatal("Comment missing")
 	}
 	t.Log("PASS: comment creation and retrieval")
-	privatePost := decode(request(b, "POST", "/posts", map[string]string{"content": "Only for me.", "privacy": "private"}, 201))["post_id"].(string)
+	privateRecord := decode(request(b, "POST", "/posts", map[string]string{"content": "Only for me.", "privacy": "private", "__test_png": string(imageData)}, 201))
+	privatePost := privateRecord["post_id"].(string)
+	privateImage := "/uploads/" + privateRecord["image_url"].(string)
 	if strings.Contains(request(a, "GET", "/posts/all", nil, 200).Body.String(), privatePost) {
 		t.Fatal("Private post exposed")
 	}
 	t.Log("PASS: private post audience")
+	request(nil, "GET", "/posts/comments/all?post_id="+post, nil, 401)
+	request(nil, "GET", privateImage, nil, 401)
+	request(a, "GET", privateImage, nil, 404)
+	request(b, "GET", privateImage, nil, 200)
+	if response := request(b, "HEAD", privateImage, nil, 200); response.Body.Len() != 0 || response.Header().Get("Cache-Control") != "private, no-store" {
+		t.Fatal("Protected media must support HEAD without reusable caching")
+	}
+	request(a, "GET", "/uploads/", nil, 404)
+	request(a, "GET", "/posts/comments/all?post_id="+privatePost, nil, 404)
+	request(a, "POST", "/posts/comments", map[string]string{"post_id": privatePost, "content": "Not in this audience."}, 404)
+	request(a, "POST", "/posts/like?post_id="+privatePost, nil, 404)
+	request(a, "POST", "/posts/like?post_id=missing", nil, 404)
+	if got := strings.TrimSpace(request(b, "GET", "/posts/comments/all?post_id="+privatePost, nil, 200).Body.String()); got != "[]" {
+		t.Fatal("Empty conversation should be an array", got)
+	}
+	request(b, "POST", "/posts/comments", map[string]string{"post_id": privatePost, "content": "Private attachment.", "__test_png": string(imageData)}, 201)
+	var commentImage string
+	if err := db.QueryRow(`SELECT image_url FROM comments WHERE post_id = ?`, privatePost).Scan(&commentImage); err != nil {
+		t.Fatal(err)
+	}
+	request(a, "GET", "/uploads/"+commentImage, nil, 404)
+	request(b, "GET", "/uploads/"+commentImage, nil, 200)
+	if _, err := db.Exec(`UPDATE users SET avatar = NULL WHERE id = ?`, ids[1]); err != nil {
+		t.Fatal(err)
+	}
+	request(b, "GET", "/posts/comments/all?post_id="+privatePost, nil, 200)
+	if _, err := db.Exec(`UPDATE users SET avatar = '' WHERE id = ?`, ids[1]); err != nil {
+		t.Fatal(err)
+	}
+	request(b, "PUT", "/posts/privacy", map[string]any{"post_id": privatePost, "privacy": "private", "allowed_users": []string{ids[0], ids[0]}}, 200)
+	request(a, "GET", "/posts/comments/all?post_id="+privatePost, nil, 200)
+	request(a, "GET", "/uploads/"+commentImage, nil, 200)
+	request(a, "GET", privateImage, nil, 200)
+	request(a, "POST", "/posts/like?post_id="+privatePost, nil, 201)
+	request(b, "PUT", "/posts/privacy", map[string]any{"post_id": privatePost, "privacy": "invalid"}, 400)
+	request(b, "PUT", "/posts/privacy", map[string]any{"post_id": privatePost, "privacy": "private", "allowed_users": []string{"missing-user"}}, 400)
+	// Invalid replacements leave the original selected audience intact.
+	request(a, "GET", "/posts/comments/all?post_id="+privatePost, nil, 200)
+	request(b, "PUT", "/posts/privacy", map[string]any{"post_id": privatePost, "privacy": "almost-private"}, 200)
+	request(a, "GET", privateImage, nil, 200)
+	if _, err := db.Exec(`UPDATE followers SET status = 'pending' WHERE follower_id = ? AND followed_id = ?`, ids[0], ids[1]); err != nil {
+		t.Fatal(err)
+	}
+	request(a, "GET", privateImage, nil, 404)
+	request(a, "GET", "/posts/comments/all?post_id="+privatePost, nil, 404)
+	if _, err := db.Exec(`UPDATE followers SET status = 'accepted' WHERE follower_id = ? AND followed_id = ?`, ids[0], ids[1]); err != nil {
+		t.Fatal(err)
+	}
+	request(a, "GET", privateImage, nil, 200)
+	request(b, "PUT", "/posts/privacy", map[string]any{"post_id": privatePost, "privacy": "private", "allowed_users": []string{}}, 200)
+	request(a, "GET", privateImage, nil, 404)
+	request(a, "GET", "/uploads/"+commentImage, nil, 404)
+	request(a, "GET", "/posts/comments/all?post_id="+privatePost, nil, 404)
+	request(a, "DELETE", "/posts/unlike?post_id="+privatePost, nil, 200)
+	t.Log("PASS: conversation, reactions and media follow current audiences; private changes are atomic")
 	request(nil, "POST", "/posts/save?post_id="+post, nil, 401)
 	request(nil, "GET", "/posts/all?feed=saved", nil, 401)
 	request(a, "GET", "/posts/all?feed=unknown", nil, 400)
@@ -214,7 +271,12 @@ func TestSocialJourneys(t *testing.T) {
 	t.Log("PASS: Arabic and emoji at post/comment limits, over-limit rejection and retrieval")
 	t.Log("PASS: owner-only deletion with related records and transactional rollback")
 	group := decode(request(a, "POST", "/groups/create", map[string]any{"name": "The creative corner", "description": "A temporary test circle."}, 201))["group_id"].(string)
+	groupRecord := decode(request(a, "POST", "/groups/posts/create", map[string]string{"group_id": group, "content": "For this circle.", "__test_png": string(imageData)}, 200))
+	groupImage := "/uploads/" + groupRecord["image_url"].(string)
+	request(a, "GET", groupImage, nil, 200)
+	request(b, "GET", groupImage, nil, 404)
 	request(b, "POST", "/groups/join", map[string]any{"group_id": group}, 200)
+	request(b, "GET", groupImage, nil, 404)
 	if !strings.Contains(request(a, "GET", "/notifications/get", nil, 200).Body.String(), "group_join_request") {
 		t.Fatal("Join notification missing")
 	}
@@ -223,6 +285,8 @@ func TestSocialJourneys(t *testing.T) {
 		t.Fatal("Membership missing")
 	}
 	t.Log("PASS: circle join request, notification and membership approval")
+	request(b, "GET", groupImage, nil, 200)
+	t.Log("PASS: circle media requires creator or accepted membership")
 	event := decode(request(a, "POST", "/groups/events/create", map[string]any{"group_id": group, "title": "Photo walk", "description": "Share your favorite frame.", "event_date": "2026-12-01T18:00:00Z"}, 201))["event_id"].(string)
 	request(b, "POST", "/groups/events/rsvp", map[string]any{"event_id": event, "status": "going"}, 200)
 	t.Log("PASS: events and RSVP")
@@ -280,5 +344,8 @@ func TestSocialJourneys(t *testing.T) {
 	wsB.Close()
 	request(b, "POST", "/logout", nil, 200)
 	request(b, "GET", "/posts/all", nil, 401)
+	request(b, "GET", "/posts/comments/all?post_id="+post, nil, 401)
+	request(b, "GET", privateImage, nil, 401)
+	request(b, "DELETE", "/posts/unlike?post_id="+post, nil, 401)
 	t.Log("PASS: logout invalidates the session")
 }

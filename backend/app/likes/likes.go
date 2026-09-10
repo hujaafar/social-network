@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"social-network/app/notifications"
+	"social-network/app/posts"
 	"social-network/app/sessions"
 
 	"github.com/google/uuid"
@@ -40,6 +41,9 @@ func AddLikeHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Check if the user has already liked the post.
+		if !posts.RequireVisible(db, w, r, postID, userID) {
+			return
+		}
 		var exists bool
 		err = db.QueryRow(`SELECT EXISTS(SELECT 1 FROM likes WHERE post_id = ? AND user_id = ?)`, postID, userID).Scan(&exists)
 		if err != nil {
@@ -112,7 +116,11 @@ func RemoveLikeHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Query the database to retrieve the user_id associated with the session.
-		userID, _ := sessions.GetUserIDFromSession(r)
+		userID, err := sessions.GetUserIDFromSession(r)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 
 		// Extract post_id from query params.
 		postID := r.URL.Query().Get("post_id")

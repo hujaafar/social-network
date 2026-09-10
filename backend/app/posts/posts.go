@@ -201,6 +201,10 @@ func UpdatePostPrivacyHandler(db *sql.DB) http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
+		if updateRequest.PostID == "" || (updateRequest.Privacy != "public" && updateRequest.Privacy != "almost-private" && updateRequest.Privacy != "private") {
+			http.Error(w, "A post ID and valid privacy setting are required", http.StatusBadRequest)
+			return
+		}
 
 		// Check if the user is the owner of the post
 		var ownerID string
@@ -219,30 +223,41 @@ func UpdatePostPrivacyHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Update the privacy in the database
-		_, err = db.Exec(`UPDATE posts SET privacy = ? WHERE id = ?`, updateRequest.Privacy, updateRequest.PostID)
+		// The audience and its selected members change together or not at all.
+		tx, err := db.BeginTx(r.Context(), nil)
 		if err != nil {
 			http.Error(w, "Failed to update privacy", http.StatusInternalServerError)
 			return
 		}
-
-		// Handle private posts: update allowed users in post_privacy
+		defer tx.Rollback()
+		if _, err := tx.ExecContext(r.Context(), `UPDATE posts SET privacy = ? WHERE id = ?`, updateRequest.Privacy, updateRequest.PostID); err != nil {
+			http.Error(w, "Failed to update privacy", http.StatusInternalServerError)
+			return
+		}
+		if _, err := tx.ExecContext(r.Context(), `DELETE FROM post_privacy WHERE post_id = ?`, updateRequest.PostID); err != nil {
+			http.Error(w, "Failed to update audience", http.StatusInternalServerError)
+			return
+		}
 		if updateRequest.Privacy == "private" {
-			// Clear existing allowed users
-			_, err := db.Exec(`DELETE FROM post_privacy WHERE post_id = ?`, updateRequest.PostID)
-			if err != nil {
-				http.Error(w, "Failed to clear private post permissions", http.StatusInternalServerError)
-				return
-			}
-
-			// Add new allowed users
 			for _, allowedUserID := range updateRequest.AllowedUsers {
-				_, err := db.Exec(`INSERT INTO post_privacy (post_id, user_id) VALUES (?, ?)`, updateRequest.PostID, allowedUserID)
-				if err != nil {
-					http.Error(w, "Failed to update private post permissions", http.StatusInternalServerError)
+				var exists bool
+				if err := tx.QueryRowContext(r.Context(), `SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)`, allowedUserID).Scan(&exists); err != nil {
+					http.Error(w, "Failed to check audience", http.StatusInternalServerError)
+					return
+				}
+				if !exists {
+					http.Error(w, "Audience contains an unknown user", http.StatusBadRequest)
+					return
+				}
+				if _, err := tx.ExecContext(r.Context(), `INSERT INTO post_privacy (post_id, user_id) VALUES (?, ?) ON CONFLICT(post_id, user_id) DO NOTHING`, updateRequest.PostID, allowedUserID); err != nil {
+					http.Error(w, "Failed to update audience", http.StatusInternalServerError)
 					return
 				}
 			}
+		}
+		if err := tx.Commit(); err != nil {
+			http.Error(w, "Failed to update privacy", http.StatusInternalServerError)
+			return
 		}
 
 		w.Write([]byte("Post privacy updated successfully"))
