@@ -2,6 +2,18 @@
 
 Validated on 10 September 2026.
 
+## Visual and social tools upgrade
+
+- Production build passed for all routes, including `/saved`, with TypeScript and lint validation. Standalone ESLint had no warnings or errors, and source formatting passed.
+- `go test -work ./... -count=1` passed. In addition to the existing journeys, tests verify saved-post authentication, idempotency, account isolation, changed audiences, unsaving, deletion cleanup, accepted-follow filtering, Arabic/emoji boundary lengths and over-limit rejection.
+- A regression test reproduces the old failure when deleting a post with comments and reactions. Deletion now passes, including a deliberately injected final-delete failure that verifies rollback preserves comments, likes, notifications and saved references.
+- `go vet ./...` passed after the backend changes.
+- The local sign-in, registration and campaign image returned HTTP 200. The saved page redirected an unauthenticated request (307), and saved/following API requests without a session returned 401.
+- The running preview uses the new backend binary and migration 22 in an isolated runtime directory. The repository's tracked database and historical media remain unchanged.
+- No new dependencies or generated images were added in this pass. The earlier clean installation/audit remains documented below; CI repeats dependency checks.
+
+Browser interaction and visual QA were not performed. Keyboard, responsive and focus behavior are implemented in source but have not been exercised in a browser during this pass.
+
 ## After-hours design and repository pass
 
 - A clean `npm ci` completed with zero reported npm vulnerabilities. Dependency versions and overrides are described in [the maintenance notes](DEPENDENCIES.md).
