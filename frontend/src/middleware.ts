@@ -6,4 +6,3 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 export const config = { matcher: ["/", "/groups/:path*", "/chat/:path*", "/profile/:path*", "/settings/:path*", "/notifications/:path*"] };
-

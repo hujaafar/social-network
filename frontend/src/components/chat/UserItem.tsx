@@ -7,4 +7,3 @@ export function UserItem({ user, onClick, isSelected }: { user: User; onClick: (
     <span><strong>{user.name}</strong><small>{user.online ? "Online now" : "Offline"}</small></span><span className={`presence-dot ${user.online ? "online" : ""}`} />
   </button>;
 }
-

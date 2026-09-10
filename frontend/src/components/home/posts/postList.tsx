@@ -23,4 +23,3 @@ export default function PostsList({ posts, isLoading, isError, onSelectPost, onR
       <PostItem post={post} hasLiked={likesState[post.id] ?? post.has_liked} likesCount={likesCount[post.id] ?? post.likes_count ?? 0} onLike={() => handleLike(post.id)} onSelectPost={() => onSelectPost(post)} />
     </motion.div>)}</div>;
 }
-

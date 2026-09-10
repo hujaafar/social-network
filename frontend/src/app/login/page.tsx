@@ -43,4 +43,3 @@ export default function LoginPage() {
     <div className="auth-switch"><span>New around here?</span><Link href="/register">Find your people <ArrowUpRight size={16} /></Link></div>
   </AuthLayout>;
 }
-

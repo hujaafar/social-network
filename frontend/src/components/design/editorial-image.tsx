@@ -17,4 +17,3 @@ export function EditorialImage({ src, alt, priority = false }: { src: string; al
     </motion.div>
   </motion.div>;
 }
-

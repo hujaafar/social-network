@@ -1,6 +1,6 @@
 "use client";
 import { apiUrl } from "@/lib/api";
- 
+
 
 import { useParams } from "next/navigation";
 import { useUserProfile } from "@/lib/hooks/swr/getUserProfile";
@@ -33,7 +33,7 @@ export default function ProfilePage() {
           },
         }
       );
-      console.log(response.data); 
+      console.log(response.data);
       setIsRequested(true);
         setAlert({ type: "success", message: "User followed successfully" });
     } catch (error) {
@@ -52,7 +52,7 @@ export default function ProfilePage() {
             You must follow <span className="font-medium">@{user.nickname}</span> to view their posts and details.
           </p>
           {!user.is_my_profile && user.pending==="0" && !isRequested && (
-            <Button 
+            <Button
             className="mt-4 bg-[#bc4312] hover:bg-[#bc4312]/90 text-white"
             onClick={() => followRequest(user.id)}
           >
@@ -60,7 +60,7 @@ export default function ProfilePage() {
           </Button>
           )}
           {((!user.is_my_profile && user.pending==="1" )|| (!user.is_my_profile && isRequested )) && (
-            <Button 
+            <Button
             className="mt-4 bg-[rgb(140,136,168)] hover:bg-[rgb(140,136,168)]/90 text-white cursor-not-allowed"
           >
             Requested
@@ -87,10 +87,6 @@ export default function ProfilePage() {
       <ProfileTabs user={user} />
     </div>
     </>
-    
+
   );
 }
-
-
-
-

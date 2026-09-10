@@ -19,4 +19,3 @@ export function useGroups() {
   useEffect(() => { refreshGroups(); }, [refreshGroups]);
   return { groups, joinedGroups, isLoading, error, refreshGroups, refreshJoinedGroups: refreshGroups };
 }
-

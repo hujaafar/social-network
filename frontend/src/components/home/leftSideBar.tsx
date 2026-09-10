@@ -42,4 +42,3 @@ export function LeftSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     </div>
   </aside>;
 }
-

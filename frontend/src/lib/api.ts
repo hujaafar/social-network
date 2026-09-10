@@ -4,4 +4,3 @@ export function apiUrl(path: string): string {
   return `${API_ORIGIN}${path.startsWith("/") ? path : `/${path}`}`;
 }
 export function socketUrl(path: string): string { return apiUrl(path).replace(/^http/, "ws"); }
-

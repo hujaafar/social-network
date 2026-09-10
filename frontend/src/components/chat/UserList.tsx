@@ -12,4 +12,3 @@ export function UserList({ users, onSelectUser, selectedUser, loading }: { users
     <div className="conversation-contacts">{loading ? <p className="inline-note p-6">Connecting to your people…</p> : !filtered.length ? <p className="inline-note p-6">{query ? "No people match your search." : "Follow people to start a conversation."}</p> : filtered.map(user => <UserItem key={user.id} user={user} onClick={() => onSelectUser(user)} isSelected={selectedUser?.id === user.id} />)}</div>
   </section>;
 }
-

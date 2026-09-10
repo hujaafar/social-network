@@ -64,4 +64,3 @@ export function MainContent() {
     <CreatePostPopup isOpen={isCreatePostOpen} onClose={() => setIsCreatePostOpen(false)} onCreatePost={() => { refreshPosts(); }} />
   </div>;
 }
-

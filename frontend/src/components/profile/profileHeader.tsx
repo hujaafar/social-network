@@ -36,4 +36,3 @@ export default function ProfileHeader({ user }: { user: User }) {
     </div>
   </section>;
 }
-

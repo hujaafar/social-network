@@ -58,4 +58,3 @@ export function ChatSocketProvider({ children }: { children: React.ReactNode }) 
   </ChatSocketContext.Provider>;
 }
 export function useChatSocket() { const context = useContext(ChatSocketContext); if (!context) throw new Error("Chat provider is missing"); return context; }
-

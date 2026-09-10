@@ -13,4 +13,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <a href="#main-content" className="skip-link">Skip to content</a><AppShell>{children}</AppShell>
   </body></html>;
 }
-

@@ -68,4 +68,3 @@ export function RightSidebar({ isOpen }: { isOpen: boolean; onClose: () => void 
     </ul>}
   </section>;
 }
-

@@ -47,4 +47,3 @@ export function CreatePostPopup({ isOpen, onClose, onCreatePost }: { isOpen: boo
     </DialogContent>
   </Dialog>;
 }
-

@@ -37,4 +37,3 @@ export default function GroupsPage() {
     <CreateGroupDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} refreshGroups={refreshGroups} />
   </div>;
 }
-

@@ -67,4 +67,3 @@ export default function RegisterPage() {
     <div className="auth-switch"><span>Already part of the circle?</span><Link href="/login">Sign in <ArrowUpRight size={16} /></Link></div>
   </AuthLayout>;
 }
-

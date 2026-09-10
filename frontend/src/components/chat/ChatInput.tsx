@@ -23,4 +23,3 @@ export function ChatInput({ currentUserId, userId }: { currentUserId: string; us
     {message.trim().split(/\s+/).length > 200 && <p role="alert" className="inline-note mt-2">Keep your message under 200 words.</p>}
   </div>;
 }
-

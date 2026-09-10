@@ -22,4 +22,3 @@ export function GroupList({ groups, type, isLoading, requestToJoin, enterGroupCh
     </div>
   </article>)}</div>;
 }
-

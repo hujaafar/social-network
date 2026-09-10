@@ -52,7 +52,7 @@ export default function SettingsPage() {
       if (user.avatar) {
         const url = `${API_ORIGIN}/avatars/${user.avatar}`;
         setAvatarPreview(url);
-        
+
       }
     }
   }, [user]);
@@ -109,7 +109,7 @@ export default function SettingsPage() {
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const errorMessage = err.response?.data;
-        
+
         if (typeof errorMessage === "string" && errorMessage.includes("Nickname already taken")) {
           setMessage("Nickname already taken. Please choose another.");
         } else {
@@ -118,7 +118,7 @@ export default function SettingsPage() {
       } else {
         setMessage("An unexpected error occurred.");
       }
-  
+
       setMessageType("error");
     }
   };

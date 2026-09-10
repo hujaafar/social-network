@@ -7,4 +7,3 @@ export async function fetcher(url: string) {
   }
   return response.json();
 }
-

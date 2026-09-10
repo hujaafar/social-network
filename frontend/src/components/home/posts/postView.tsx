@@ -50,4 +50,3 @@ export function PostView({ post, onClose }: Props) {
     </form>
   </div>;
 }
-

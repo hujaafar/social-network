@@ -22,7 +22,7 @@ export function LeaveGroupButton({ groupId, onLeave }: LeaveGroupButtonProps) {
       text: "Are you sure you want to leave this group?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#bc4312", 
+      confirmButtonColor: "#bc4312",
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, leave",
       cancelButtonText: "Cancel",
@@ -38,7 +38,7 @@ export function LeaveGroupButton({ groupId, onLeave }: LeaveGroupButtonProps) {
 
         await MySwal.fire({
           title: "Left Group",
-          text: response.data, 
+          text: response.data,
           icon: "success",
           confirmButtonColor: "#bc4312",
         });

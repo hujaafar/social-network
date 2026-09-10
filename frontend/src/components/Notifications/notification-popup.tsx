@@ -55,4 +55,3 @@ export default function NotificationPopup({ message, username, onClose }: Notifi
     </div>
   )
 }
-

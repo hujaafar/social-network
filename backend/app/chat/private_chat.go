@@ -206,7 +206,7 @@ func PrivateChatHandler(db *sql.DB) http.HandlerFunc {
 			var allowed bool
 			checkQuery := `
                 SELECT EXISTS(
-                    SELECT 1 FROM followers 
+                    SELECT 1 FROM followers
                     WHERE (follower_id = ? AND followed_id = ? AND status = 'accepted')
                        OR (follower_id = ? AND followed_id = ? AND status = 'accepted')
                 )

@@ -22,4 +22,3 @@ export default function PostItem({ post, hasLiked, likesCount, onLike, onSelectP
     </footer>
   </article>;
 }
-
