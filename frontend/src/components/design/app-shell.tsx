@@ -8,6 +8,9 @@ import { RightSidebar } from "@/components/Notifications/Sidebar";
 import { ChatSocketProvider } from "@/lib/ChatSocketProvider";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { motion, useScroll, useSpring, useReducedMotion } from "framer-motion";
+import useSWR from "swr";
+import { apiUrl } from "@/lib/api";
+import { fetcher } from "@/lib/hooks/swr/fetcher";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -16,6 +19,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 180, damping: 32 });
   const reduceMotion = useReducedMotion();
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const { data: activity } = useSWR(isAuthPage ? null : apiUrl("/notifications/get"), fetcher, { refreshInterval: 30000 });
+  const unread = Array.isArray(activity) ? activity.filter((item: { read: boolean }) => !item.read).length : 0;
   if (pathname === "/login" || pathname === "/register") return <>{children}</>;
   return <ChatSocketProvider>
     <div className="common-app">
@@ -36,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="topbar-actions">
             <Link href="/groups" className="explore-link">Find your circle <ArrowUpRight size={16} /></Link>
             <Dialog open={activityOpen} onOpenChange={setActivityOpen}>
-              <DialogTrigger asChild><button className="icon-button" aria-label="Open notifications"><Bell size={20} /></button></DialogTrigger>
+              <DialogTrigger asChild><button className="icon-button notification-button" aria-label={`Open notifications${unread ? `, ${unread} unread` : ""}`}><Bell size={20} />{unread > 0 && <span className="notification-count" aria-hidden="true">{unread > 9 ? "9+" : unread}</span>}</button></DialogTrigger>
               <DialogContent className="activity-dialog">
                 <DialogTitle className="sr-only">Notifications</DialogTitle><DialogDescription className="sr-only">Your follow requests, group invitations and event updates.</DialogDescription>
                 <RightSidebar isOpen onClose={() => setActivityOpen(false)} />

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -27,7 +28,16 @@ func Serverinit() {
 	// Apply migrations
 	sqlite.ApplyMigrations(db)
 
-	// Assign the database connection to the sessions package
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Server is running on http://localhost:%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, NewHandler(db)))
+}
+
+// NewHandler shares the exact application routes between the server and isolated integration tests.
+func NewHandler(db *sql.DB) http.Handler {
 	sessions.DB = db
 
 	// Create a new ServeMux to manage routes
@@ -128,11 +138,5 @@ func Serverinit() {
 	mux.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 	mux.Handle("/avatars/", http.StripPrefix("/avatars/", http.FileServer(http.Dir("avatars"))))
 
-	// Apply CORS middleware globally
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	log.Printf("Server is running on http://localhost:%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, CORSMiddleware(mux)))
+	return CORSMiddleware(mux)
 }

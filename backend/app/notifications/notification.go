@@ -40,7 +40,7 @@ func AddNotificationHandler(db *sql.DB) http.HandlerFunc {
 		notification.ID = uuid.New().String()
 		_, err := db.Exec(`
 			INSERT INTO notifications (id, user_id, type, content, post_id, related_user_id, group_id, event_id)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			VALUES (?, ?, ?, ?, NULLIF(?, ''), ?, ?, ?)
 		`, notification.ID, notification.UserID, notification.Type, notification.Content, notification.PostID, notification.RelatedUserID, notification.GroupID, notification.EventID)
 		if err != nil {
 			http.Error(w, "Failed to create notification", http.StatusInternalServerError)
@@ -66,8 +66,8 @@ func GetNotificationsHandler(db *sql.DB) http.HandlerFunc {
 
 		// Query to fetch notifications with sender's nickname and avatar
 		rows, err := db.Query(`
-			SELECT n.id, n.user_id, n.type, n.content, n.post_id, n.related_user_id, n.group_id, n.event_id, n.read, n.created_at,
-			       u.nickname, u.avatar
+			SELECT n.id, n.user_id, n.type, n.content, COALESCE(n.post_id, ''), COALESCE(n.related_user_id, ''), COALESCE(n.group_id, ''), COALESCE(n.event_id, ''), n.read, n.created_at,
+			       COALESCE(u.nickname, ''), COALESCE(u.avatar, '')
 			FROM notifications n
 			LEFT JOIN users u ON u.id = n.related_user_id
 			WHERE n.user_id = ?

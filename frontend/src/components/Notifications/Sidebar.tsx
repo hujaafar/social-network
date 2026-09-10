@@ -4,11 +4,13 @@ import { Bell, CheckCheck, Users, Check, X, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/api";
+import { useSWRConfig } from "swr";
 interface Notification {
   id: string; type: string; content: string; related_user_id?: string; group_id?: string;
   read: boolean; created_at: string; sender_avatar?: string;
 }
 export function RightSidebar({ isOpen }: { isOpen: boolean; onClose: () => void }) {
+  const { mutate } = useSWRConfig();
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -18,9 +20,10 @@ export function RightSidebar({ isOpen }: { isOpen: boolean; onClose: () => void 
       const response = await fetch(apiUrl("/notifications/get"), { credentials: "include" });
       if (!response.ok) throw new Error("Could not load");
       const data = await response.json(); setItems(Array.isArray(data) ? data : []); setError("");
+      mutate(apiUrl("/notifications/get"), data, false);
     } catch { setError("We couldn’t load your activity. Try again in a moment."); }
     finally { setLoading(false); }
-  }, []);
+  }, [mutate]);
   useEffect(() => {
     if (!isOpen) return;
     load();
@@ -46,6 +49,7 @@ export function RightSidebar({ isOpen }: { isOpen: boolean; onClose: () => void 
     try {
       await request(id ? `/notifications/read?id=${encodeURIComponent(id)}` : "/notifications/read-all");
       setItems(prev => prev.map(item => !id || item.id === id ? { ...item, read: true } : item));
+      mutate(apiUrl("/notifications/get"));
     } catch { setError("We couldn’t mark the notification as read."); }
     finally { setPending(null); }
   }

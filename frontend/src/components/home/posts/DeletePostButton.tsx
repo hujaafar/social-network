@@ -1,70 +1,22 @@
 "use client";
-import { API_ORIGIN } from "@/lib/api";
-
-
-import React from "react";
+import { useState } from "react";
+import { useSWRConfig } from "swr";
+import { Trash2 } from "lucide-react";
 import axios from "axios";
 import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-import { motion } from "framer-motion";
-import { FaTrashAlt } from "react-icons/fa";
-
-interface DeletePostButtonProps {
-  postId: string;
-}
-
-const MySwal = withReactContent(Swal);
-
-export function DeletePostButton({ postId }: DeletePostButtonProps) {
-  const handleDelete = async () => {
-    const result = await MySwal.fire({
-      title: "Delete Post?",
-      text: "Are you sure you want to delete this post?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#bc4312",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await axios.delete(`${API_ORIGIN}/posts/delete?id=${postId}`, {
-          withCredentials: true,
-        });
-
-        await MySwal.fire({
-          title: "Deleted!",
-          text: "The post has been deleted.",
-          icon: "success",
-          confirmButtonColor: "#bc4312",
-        });
-
-        window.location.reload();
-      } catch (err: unknown) {
-        console.log("Error deleting post:", err);
-        MySwal.fire("Error", "Could not delete post.", "error");
-      }
-    }
-  };
-
-  return (
-    <motion.button
-      className="p-2 rounded-full text-red-600 hover:bg-red-50"
-      onClick={handleDelete}
-      initial={{ scale: 1 }}
-      whileHover={{
-        scale: 1.25,
-        rotate: [0, -10, 10, -10, 10, 0],
-        transition: {
-          duration: 0.6,
-          repeat: Infinity,
-          repeatType: "loop",
-        },
-      }}
-      whileTap={{ scale: 0.9, rotate: 0 }}
-    >
-      <FaTrashAlt className="w-5 h-5" />
-    </motion.button>
-  );
+import { apiUrl } from "@/lib/api";
+export function DeletePostButton({ postId }: { postId: string }) {
+  const [pending, setPending] = useState(false);
+  const { mutate } = useSWRConfig();
+  async function remove() {
+    const result = await Swal.fire({ title: "Delete this post?", text: "This also removes its comments and reactions.", showCancelButton: true, confirmButtonColor: "#bc4312", confirmButtonText: "Delete post", cancelButtonText: "Keep it" });
+    if (!result.isConfirmed || pending) return;
+    setPending(true);
+    try {
+      await axios.delete(apiUrl(`/posts/delete?id=${postId}`), { withCredentials: true });
+      await mutate(key => typeof key === "string" && (key.includes("/posts/all") || key.includes("/users/profile")));
+    } catch { await Swal.fire("Couldn’t delete the post", "Please try again in a moment.", "error"); }
+    finally { setPending(false); }
+  }
+  return <button type="button" className="icon-button text-muted-foreground" aria-label="Delete post" disabled={pending} onClick={remove}><Trash2 size={16} /></button>;
 }
