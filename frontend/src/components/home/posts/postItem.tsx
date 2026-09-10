@@ -5,12 +5,15 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatPostDate } from "@/lib/utils";
 import { apiUrl } from "@/lib/api";
 import { Post } from "@/types/post";
+import { SavePostButton } from "./save-post-button";
 interface PostItemProps {
   post: Post;
   hasLiked: boolean;
   likesCount: number;
   onLike: () => void;
   onSelectPost: () => void;
+  likePending?: boolean;
+  hideImage?: boolean;
 }
 export default function PostItem({
   post,
@@ -18,6 +21,8 @@ export default function PostItem({
   likesCount,
   onLike,
   onSelectPost,
+  likePending = false,
+  hideImage = false,
 }: PostItemProps) {
   const PrivacyIcon =
     post.privacy === "private" ? LockKeyhole : post.privacy === "almost-private" ? Users : Globe2;
@@ -47,7 +52,7 @@ export default function PostItem({
         </div>
       </header>
       <p className="post-copy">{post.content}</p>
-      {post.image_url && (
+      {post.image_url && !hideImage && (
         <button className="post-photo" onClick={onSelectPost} aria-label="Open post and comments">
           <img
             src={apiUrl(`/uploads/${post.image_url}`)}
@@ -59,6 +64,7 @@ export default function PostItem({
       <footer className="post-actions">
         <button
           onClick={onLike}
+          disabled={likePending}
           aria-pressed={hasLiked}
           aria-label={hasLiked ? "Unlike post" : "Like post"}
           className={hasLiked ? "liked" : ""}
@@ -77,6 +83,7 @@ export default function PostItem({
         <button className="join-conversation" onClick={onSelectPost}>
           Join in <span aria-hidden="true">↗</span>
         </button>
+        <SavePostButton post={post} />
       </footer>
     </article>
   );
