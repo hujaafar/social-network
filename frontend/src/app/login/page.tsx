@@ -1,95 +1,83 @@
-"use client"
+"use client";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight, LoaderCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { PasswordInput } from "@/components/auth/password";
+import { useState } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { AuthLayout } from "@/components/auth/auth-layout"
-import { LoginButtons } from "@/components/auth/login-buttons"
-import { PasswordInput } from "@/components/auth/password"
-import { useState } from "react"
-import axios from "axios"
-import { useRouter } from "next/navigation"
-import Alert from "@/components/ui/alert";
 export default function LoginPage() {
-    axios.defaults.withCredentials = true;
-    const router = useRouter();
-    const [identifier,setIdentifier] = useState("");
-    const [password,setPassword] = useState("");
-    const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      try {
-          const res = await axios.post('http://localhost:8080/login', { identifier, password });
-          console.log(res.data);
-          router.push('/');
-      } catch (err) {
-          if (axios.isAxiosError(err) && err.response) {
-              setAlert({ type: "error", message: err.response.data });
-          } else {
-              setAlert({ type: "error", message: "An unexpected error occurred" });
-          }
-      }
+  const router = useRouter();
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (pending) return;
+    setPending(true);
+    setError("");
+    try {
+      await axios.post(
+        apiUrl("/login"),
+        { identifier: identifier.trim(), password },
+        { withCredentials: true },
+      );
+      router.replace("/");
+      router.refresh();
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      setError(
+        status === 400 || status === 401
+          ? "That email or password doesn’t match. Please try again."
+          : "We couldn’t connect right now. Please try again in a moment.",
+      );
+      setPending(false);
+    }
   }
-
-
-
-
-
   return (
-   <>
-    {alert && (
-        <Alert
-          title={alert.type === "success" ? "Success" : "Error"}
-          message={alert.message}
-          type={alert.type}
-          duration={5000}
-          onClose={() => setAlert(null)}
+    <AuthLayout title="YOU’RE IN GOOD COMPANY." subtitle="Sign in and pick up where you left off.">
+      <form className="auth-form" onSubmit={handleLogin} aria-busy={pending}>
+        <div className="form-field">
+          <Label htmlFor="identifier">Email or nickname</Label>
+          <Input
+            id="identifier"
+            name="username"
+            autoComplete="username"
+            placeholder="Your email or nickname"
+            required
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+          />
+        </div>
+        <PasswordInput
+          id="password"
+          label="Password"
+          value={password}
+          setValue={setPassword}
+          required
         />
-      )}
-     <AuthLayout title="Welcome back" subtitle="Enter your credentials to access your account" >
-      <div className="space-y-6">
-        <form className="space-y-4" onSubmit={handleLogin}>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="text"
-              placeholder="Enter your email"
-              required
-              className="transition-all border-gray-200 hover:border-[#6C5CE7]/50 focus:border-[#6C5CE7] focus:ring-[#6C5CE7]/20"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-            />
-          </div>
-
-          <PasswordInput id="password" label="Password" value={password} setValue={setPassword} required />
-
-          <div className="flex items-center justify-between">
-            <Link href="/forgot-password" className="text-sm text-[#6C5CE7] hover:underline">
-              Forgot Password?
-            </Link>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full bg-gradient-to-r from-[#6C5CE7] to-[#a598ff] hover:opacity-90 transition-opacity"
-          >
-            Sign in
-          </Button>
-        </form>
-
-        <LoginButtons />
-
-        <p className="text-center text-sm text-gray-600">
-          Dont have an account?{" "}
-          <Link href="/register" className="text-[#6C5CE7] hover:underline font-medium">
-            Sign up
-          </Link>
-        </p>
+        {error && (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        )}
+        <Button type="submit" className="auth-submit" disabled={pending}>
+          {pending ? "Signing in…" : "Sign in to Common"}
+          {pending ? <LoaderCircle className="animate-spin" size={18} /> : <ArrowRight size={18} />}
+        </Button>
+      </form>
+      <div className="auth-switch">
+        <span>Not part of the story yet?</span>
+        <Link href="/register">
+          Create an account <ArrowUpRight size={16} />
+        </Link>
       </div>
     </AuthLayout>
-   </>
-  )
+  );
 }
-

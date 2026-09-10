@@ -1,18 +1,19 @@
-"use client"
+"use client";
 
-import { Dispatch, SetStateAction, useState } from "react"
-import { Eye, EyeOff } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Dispatch, SetStateAction, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface PasswordInputProps {
-  id: string
-  label: string
-  placeholder?: string
-  required?: boolean
-  value?: string
-  setValue: Dispatch<SetStateAction<string>> // Ensure type matches setState
+  id: string;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  autoComplete?: "current-password" | "new-password";
+  value?: string;
+  setValue: Dispatch<SetStateAction<string>>;
 }
 
 export function PasswordInput({
@@ -20,10 +21,11 @@ export function PasswordInput({
   label,
   placeholder = "Enter your password",
   required = false,
+  autoComplete = "current-password",
   value,
   setValue,
 }: PasswordInputProps) {
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="space-y-2">
@@ -34,24 +36,23 @@ export function PasswordInput({
           type={showPassword ? "text" : "password"}
           placeholder={placeholder}
           required={required}
-          className="pr-10 transition-all border-gray-200 group-hover:border-[#6C5CE7]/50 focus:border-[#6C5CE7] focus:ring-[#6C5CE7]/20"
+          autoComplete={autoComplete}
+          className="password-field-input"
           value={value}
-          onChange={(e) => setValue(e.target.value)} // Ensure setValue is used correctly
+          onChange={(e) => setValue(e.target.value)}
         />
         <Button
           type="button"
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={showPassword}
           variant="ghost"
           size="icon"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#6C5CE7]"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-950"
           onClick={() => setShowPassword(!showPassword)}
         >
-          {showPassword ? (
-            <EyeOff className="h-4 w-4" />
-          ) : (
-            <Eye className="h-4 w-4" />
-          )}
+          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </Button>
       </div>
     </div>
-  )
+  );
 }

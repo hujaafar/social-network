@@ -1,89 +1,120 @@
 "use client";
-
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreateGroupDialog } from "@/components/groups/create-group-dialog";
 import { GroupList } from "@/components/groups/group-list";
 import { useGroups } from "@/lib/hooks/use-groups";
+import { apiUrl } from "@/lib/api";
+import { EditorialImage } from "@/components/design/editorial-image";
 import axios from "axios";
-import { Group } from "@/types/groupTypes";
-
 export default function GroupsPage() {
-  const [searchQuery] = useState("");
-  const { groups, joinedGroups, isLoading, searchGroups, refreshGroups } =
-    useGroups();
+  const [query, setQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-
-  async function requestToJoin(groupId: string) {
+  const [actionError, setActionError] = useState("");
+  const [pending, setPending] = useState<string | null>(null);
+  const { groups, joinedGroups, isLoading, error, refreshGroups } = useGroups();
+  const router = useRouter();
+  async function requestToJoin(id: string) {
+    setPending(id);
+    setActionError("");
     try {
-      await axios.post(
-        "http://localhost:8080/groups/join",
-        { group_id: groupId },
-        { withCredentials: true }
-      );
-      refreshGroups();
-    } catch (error) {
-      console.log("Error sending join request:", error);
+      await axios.post(apiUrl("/groups/join"), { group_id: id }, { withCredentials: true });
+      await refreshGroups();
+    } catch {
+      setActionError("We couldn’t send your request. Please try again.");
+    } finally {
+      setPending(null);
     }
   }
-
-  function enterGroupChat(groupId: string) {
-    window.location.href = `/groups/${groupId}`;
-  }
-
+  const filter = (items: typeof groups) =>
+    items.filter((group) =>
+      `${group.name} ${group.description}`.toLowerCase().includes(query.trim().toLowerCase()),
+    );
   return (
-    <div className="py-8 px-4">
-      {/* This container is inside the parent max-w-screen-xl from layout */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-4">
-          <h1 className="text-3xl font-bold text-[#6C5CE7]">Groups</h1>
-          <Button
-            onClick={() => setIsCreateOpen(true)}
-            className="bg-[#6C5CE7] text-white mt-4 sm:mt-0"
-          >
-            Create New Group
-          </Button>
+    <div className="page-wrap circles-page">
+      <header className="page-intro">
+        <div>
+          <span className="eyebrow">FIND YOUR COMMON GROUND</span>
+          <h1 className="page-title">
+            FIND YOUR <em>PEOPLE.</em>
+          </h1>
+          <p>A circle for whatever makes you, you.</p>
         </div>
-
-        <Input
-          placeholder="Search groups..."
-          className="pl-9 border-[#6C5CE7] my-4"
-          value={searchQuery}
-          onChange={(e) => searchGroups(e.target.value)}
-        />
-
-        <Tabs defaultValue="discover">
-          <TabsList>
-            <TabsTrigger value="discover">Discover Groups</TabsTrigger>
-            <TabsTrigger value="joined">My Groups</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="discover">
-            <GroupList
-              groups={groups as Group[]}
-              type="discover"
-              isLoading={isLoading}
-              refreshGroups={refreshGroups}
-              requestToJoin={requestToJoin}
-              enterGroupChat={enterGroupChat}
-            />
-          </TabsContent>
-
-          <TabsContent value="joined">
-            <GroupList
-              groups={joinedGroups as Group[]}
-              type="joined"
-              isLoading={isLoading}
-              refreshGroups={refreshGroups}
-              requestToJoin={requestToJoin}
-              enterGroupChat={enterGroupChat}
-            />
-          </TabsContent>
-        </Tabs>
+        <Button onClick={() => setIsCreateOpen(true)} className="new-post-button">
+          <Plus size={18} /> Create a circle
+        </Button>
+      </header>
+      <div className="circles-banner">
+        <div>
+          <span className="eyebrow">BIG INTERESTS. SMALL OBSESSIONS.</span>
+          <p>
+            COME FOR A THING.
+            <br />
+            STAY FOR THE PEOPLE.
+          </p>
+        </div>
+        <div>
+          <EditorialImage
+            src="/images/common-objects.webp"
+            alt="A camera, headphones and books celebrating shared interests"
+            reveal={false}
+            sizes="(max-width: 700px) 40vw, 350px"
+          />
+        </div>
       </div>
-
+      <div className="search-field circles-search">
+        <Search size={18} />
+        <Input
+          aria-label="Search circles"
+          placeholder="Find your thing. Photography, music, anything…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+      {(error || actionError) && (
+        <div className="inline-error mb-6" role="alert">
+          {error || actionError}
+          {error && (
+            <button className="block underline mt-2" onClick={refreshGroups}>
+              Try again
+            </button>
+          )}
+        </div>
+      )}
+      <Tabs defaultValue="discover">
+        <TabsList className="circles-tabs">
+          <TabsTrigger value="discover">
+            Discover circles <span>{groups.length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="joined">
+            Your circles <span>{joinedGroups.length}</span>
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="discover">
+          <GroupList
+            groups={filter(groups)}
+            type="discover"
+            isLoading={isLoading}
+            requestToJoin={requestToJoin}
+            enterGroupChat={(id) => router.push(`/groups/${id}`)}
+            pending={pending}
+          />
+        </TabsContent>
+        <TabsContent value="joined">
+          <GroupList
+            groups={filter(joinedGroups)}
+            type="joined"
+            isLoading={isLoading}
+            requestToJoin={requestToJoin}
+            enterGroupChat={(id) => router.push(`/groups/${id}`)}
+            pending={pending}
+          />
+        </TabsContent>
+      </Tabs>
       <CreateGroupDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}

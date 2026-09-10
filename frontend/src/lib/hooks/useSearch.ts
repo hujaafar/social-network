@@ -1,26 +1,24 @@
 import useSWR from "swr";
-
-const API_URL = "http://localhost:8080"; // Change this if your backend lives elsewhere
-
-// A fetcher that checks for HTTP errors and returns JSON data
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const errorInfo = await res.text();
-    throw new Error(`Error ${res.status}: ${res.statusText}. ${errorInfo}`);
-  }
-  return res.json();
-};
-
+import { apiUrl } from "@/lib/api";
+import { fetcher } from "@/lib/hooks/swr/fetcher";
+import { useEffect, useState } from "react";
 export function useSearch(query: string) {
-  const { data, error } = useSWR(
-    query ? `${API_URL}/search?query=${encodeURIComponent(query)}` : null,
-    fetcher
+  const normalized = query.trim();
+  const [debounced, setDebounced] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(normalized), 250);
+    return () => clearTimeout(timer);
+  }, [normalized]);
+  const { data, error, isLoading } = useSWR(
+    normalized && normalized === debounced
+      ? apiUrl(`/search?query=${encodeURIComponent(debounced)}`)
+      : null,
+    fetcher,
   );
-
   return {
-    searchResults: data, // Expected to be of the form { users: [...], groups: [...] }
-    isLoading: !error && !data && query !== "",
+    searchResults: normalized === debounced ? data : undefined,
+    isLoading,
     isError: error,
+    isWaiting: normalized !== debounced && normalized.length > 0,
   };
 }

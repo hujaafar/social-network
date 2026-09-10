@@ -1,4 +1,6 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
+import { API_ORIGIN } from "@/lib/api";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +47,7 @@ export default function PostsTab({
         <h3 className="text-lg font-semibold text-gray-800">Group Posts</h3>
         <Dialog open={isCreatingPost} onOpenChange={setIsCreatingPost}>
           <DialogTrigger asChild>
-            <Button className="bg-[#6C5CE7] text-white flex items-center px-4 py-2">
+            <Button className="bg-[#bc4312] text-white flex items-center px-4 py-2">
               <Plus className="w-4 h-4 mr-2" />
               Create Post
             </Button>
@@ -72,10 +74,7 @@ export default function PostsTab({
               onChange={(e) => setPostFile(e.target.files?.[0] || null)}
               className="mt-2"
             />
-            <Button
-              className="w-full mt-3 bg-[#6C5CE7] text-white py-2"
-              onClick={handleCreatePost}
-            >
+            <Button className="w-full mt-3 bg-[#bc4312] text-white py-2" onClick={handleCreatePost}>
               Post
             </Button>
           </DialogContent>
@@ -98,19 +97,13 @@ export default function PostsTab({
                 {/* User Info Section */}
                 <div className="flex items-center space-x-3">
                   <img
-                    src={
-                      post.avatar
-                        ? `http://localhost:8080/avatars/${post.avatar}`
-                        : "/profile.png"
-                    }
+                    src={post.avatar ? `${API_ORIGIN}/avatars/${post.avatar}` : "/profile.png"}
                     alt="User Avatar"
                     className="w-12 h-12 rounded-full border border-gray-300 object-cover"
                   />
 
                   <div>
-                    <p className="text-md font-semibold text-gray-800">
-                      {post.nickname || "You"}
-                    </p>
+                    <p className="text-md font-semibold text-gray-800">{post.nickname || "You"}</p>
                     <p className="text-xs text-gray-500">
                       {new Date(post.created_at).toLocaleString()}
                     </p>
@@ -118,15 +111,13 @@ export default function PostsTab({
                 </div>
 
                 {/* Post Content */}
-                <p className="mt-3 text-gray-900 text-sm leading-relaxed">
-                  {post.content}
-                </p>
+                <p className="mt-3 text-gray-900 text-sm leading-relaxed">{post.content}</p>
 
                 {/* Post Image (if available) */}
                 {post.image_url && (
                   <div className="mt-3">
                     <img
-                      src={`http://localhost:8080/uploads/${post.image_url}`}
+                      src={`${API_ORIGIN}/uploads/${post.image_url}`}
                       alt="Post Image"
                       className="w-full rounded-lg border border-gray-300 object-cover max-h-[400px]"
                     />

@@ -1,131 +1,147 @@
+"use client";
 import { useState } from "react";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Plus, Menu } from "lucide-react";
-import { CreatePostPopup } from "@/components/home/posts/CreatePostPopup";
+import { ArrowUpRight, Image as ImageIcon, MessageCircle, Asterisk, Bookmark } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PostsList from "@/components/home/posts/postList";
-import { PostView } from "@/components/home/posts/postView";
+import { usePostReader } from "@/components/home/posts/post-reader";
+import { EditorialImage } from "@/components/design/editorial-image";
+import { useWorkspace } from "@/components/design/workspace-tools";
 import { usePosts } from "@/lib/hooks/swr/getPosts";
-import { Post } from "@/types/post";
-import { useSearch } from "@/lib/hooks/useSearch";
-import { User } from "@/types/user";
-import { Group } from "@/types/groupTypes";
 
-interface MainContentProps {
-  onOpenSidebar: () => void;
-}
-
-export function MainContent({ onOpenSidebar }: MainContentProps) {
-  const { posts, isLoading, isError, refreshPosts } = usePosts();
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
-
-  // State to store the search query
-  const [searchQuery, setSearchQuery] = useState("");
-  const {
-    searchResults,
-    isLoading: isSearchLoading,
-    isError: isSearchError,
-  } = useSearch(searchQuery);
-
+export function MainContent() {
+  const [feed, setFeed] = useState<"all" | "following">("all");
+  const { posts, isLoading, isError, refreshPosts } = usePosts(feed);
+  const { openComposer, openSearch } = useWorkspace();
+  const { openPost, reader } = usePostReader();
   return (
-    <main className="w-full max-w-2xl mx-auto px-4 md:px-6 lg:px-8 py-6">
-      {/* Search and Create Post Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={onOpenSidebar}
-        >
-          <Menu className="h-6 w-6" />
-        </Button>
-        <Input
-          placeholder="Search for friends, groups, pages"
-          className="flex-1"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Button
-          className="gap-2 bg-[#6C5CE7] hover:bg-[#6C5CE7]/90"
-          onClick={() => setIsCreatePostOpen(true)}
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Add New Post</span>
-        </Button>
+    <div className="feed-page">
+      <div className="feed-heading">
+        <div>
+          <span className="eyebrow">YOUR DAILY DOSE OF COMMON</span>
+          <h1>
+            IN THE <em>LOOP.</em>
+          </h1>
+        </div>
+        <Link href="/saved" className="collection-link">
+          <Bookmark size={18} /> Your collection <ArrowUpRight size={17} />
+        </Link>
+      </div>
+      <div className="feed-layout">
+        <section className="feed-stream" aria-label="Your feed">
+          <button className="composer-prompt" onClick={openComposer}>
+            <span className="composer-icon">
+              <MessageCircle size={22} />
+            </span>
+            <span>
+              What’s on your mind?<small>A thought, a photo, a little update.</small>
+            </span>
+            <ImageIcon size={21} />
+          </button>
+          <Link href="/groups" className="feed-campaign">
+            <div className="feed-campaign-copy">
+              <span className="eyebrow">FIND YOUR COMMON GROUND</span>
+              <strong>
+                YOUR PEOPLE.
+                <br />
+                YOUR KIND
+                <br />
+                OF ENERGY<span>.</span>
+              </strong>
+              <span className="campaign-action">
+                Explore circles <ArrowUpRight size={19} />
+              </span>
+            </div>
+            <div className="feed-campaign-image">
+              <EditorialImage
+                src="/images/common-afterhours.webp"
+                alt="Friends enjoying an evening together on a rooftop"
+                priority
+                reveal={false}
+                sizes="(max-width: 600px) 60vw, 35vw"
+              />
+              <Asterisk className="campaign-asterisk" aria-hidden="true" />
+            </div>
+          </Link>
+
+          <Tabs
+            value={feed}
+            onValueChange={(value) => setFeed(value as "all" | "following")}
+            className="feed-tabs"
+          >
+            <div className="feed-tabs-heading">
+              <TabsList aria-label="Choose your feed">
+                <TabsTrigger value="all">The latest</TabsTrigger>
+                <TabsTrigger value="following">Following</TabsTrigger>
+              </TabsList>
+              <span>GOOD THINGS, SHARED.</span>
+            </div>
+            <TabsContent value={feed}>
+              <PostsList
+                posts={posts}
+                isLoading={isLoading}
+                isError={isError}
+                onSelectPost={openPost}
+                onRetry={() => refreshPosts()}
+                onCreate={feed === "all" ? openComposer : undefined}
+                emptyTitle={feed === "following" ? "Make this feed feel like you." : undefined}
+                emptyDescription={
+                  feed === "following"
+                    ? "Follow people you connect with. Their shared moments will appear here once your follow is accepted."
+                    : undefined
+                }
+              />
+              {feed === "following" && !posts.length && !isLoading && !isError && (
+                <button className="following-find-button" onClick={openSearch}>
+                  Find your people <ArrowUpRight size={18} />
+                </button>
+              )}
+            </TabsContent>
+          </Tabs>
+        </section>
+        <aside className="discovery-rail" aria-label="Discover Common">
+          <div className="rail-note">
+            <span className="eyebrow">STRANGERS → YOUR PEOPLE</span>
+            <Asterisk className="rail-asterisk" size={52} aria-hidden="true" />
+            <h2>
+              A GOOD KIND
+              <br />
+              OF <em>OBSESSION.</em>
+            </h2>
+            <p>Find the people who care about the same little things.</p>
+            <Link href="/groups">
+              Find your circle <ArrowUpRight size={18} />
+            </Link>
+          </div>
+          <Link href="/groups" className="discovery-art">
+            <div className="discovery-art-image">
+              <EditorialImage
+                src="/images/common-objects.webp"
+                alt="A camera, headphones and art books in warm afternoon light"
+                reveal={false}
+                sizes="(max-width: 1180px) 35vw, 280px"
+              />
+            </div>
+            <div>
+              <span className="eyebrow">FOLLOW YOUR CURIOSITY</span>
+              <h3>
+                Find your
+                <br />
+                next thing.
+              </h3>
+              <ArrowUpRight size={24} />
+            </div>
+          </Link>
+          <div className="rail-link">
+            <span>Keep the conversation going.</span>
+            <Link href="/chat">
+              Open messages <ArrowUpRight size={17} />
+            </Link>
+          </div>
+        </aside>
       </div>
 
-      {/* If a search query exists, display search results; otherwise, show posts or selected post */}
-      {searchQuery ? (
-        <div>
-          {isSearchLoading && <p>Loading search results...</p>}
-          {isSearchError && (
-            <p className="text-red-600">
-              Error loading search results: {isSearchError.message}
-            </p>
-          )}
-          {searchResults && (
-            <>
-              <h3 className="font-bold mt-4">Users</h3>
-              <ul>
-                {searchResults.users?.map((user: User) => (
-                  <li key={user.id} className="p-2 border-b">
-                    <Link
-                      href={`/profile/${user.id}`}
-                      className="flex items-center gap-4 hover:bg-gray-100 p-2"
-                    >
-                      <span className="text-base font-medium">
-                        {user.nickname}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-
-              <h3 className="font-bold mt-4">Groups</h3>
-              <ul>
-                {searchResults.groups?.map((group: Group) => (
-                  <li key={group.id} className="p-2 border-b">
-                    <Link
-                      href={`/groups#${group.id}`}
-                      className="flex items-center gap-4 hover:bg-gray-100 p-2"
-                    >
-                      <span className="text-base font-medium">
-                        {group.name}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-      ) : selectedPost ? (
-        <PostView
-          post={selectedPost}
-          onClose={() => setSelectedPost(null)}
-          handleLike={async (postId: number) => {
-            // Implement like functionality as needed
-          }}
-          likesState={{}}
-          likesCount={{}}
-        />
-      ) : (
-        <PostsList
-          posts={posts}
-          isLoading={isLoading}
-          isError={isError}
-          onSelectPost={setSelectedPost}
-        />
-      )}
-
-      {/* Create Post Popup */}
-      <CreatePostPopup
-        isOpen={isCreatePostOpen}
-        onClose={() => setIsCreatePostOpen(false)}
-        onCreatePost={refreshPosts}
-      />
-    </main>
+      {reader}
+    </div>
   );
 }

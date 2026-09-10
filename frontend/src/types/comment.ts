@@ -7,4 +7,3 @@
 //     created_at: string;
 //     image_url?: string;
 //   }
-  

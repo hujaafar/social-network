@@ -1,95 +1,70 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useRef, useState } from "react";
+import useSWR, { useSWRConfig } from "swr";
+import { apiUrl } from "@/lib/api";
+import { isPostFeed } from "@/lib/post-cache";
+import { fetcher } from "@/lib/hooks/swr/fetcher";
+import { useWorkspace } from "@/components/design/workspace-tools";
 import { Post } from "@/types/post";
 
-interface UseLikesReturn {
-  likesState: { [key: string]: boolean };
-  likesCount: { [key: string]: number };
-  handleLike: (postId: string) => Promise<void>;
-}
+export function useLikes(initialPosts: Post[], refreshPosts?: () => void) {
+  const [changes, setChanges] = useState<Record<string, { liked: boolean; count: number }>>({});
+  const [pendingLikes, setPendingLikes] = useState<Record<string, boolean>>({});
+  const inFlight = useRef(new Set<string>());
+  const { data: feed } = useSWR<Post[]>(apiUrl("/posts/all"), fetcher);
+  const { mutate } = useSWRConfig();
+  const { notify } = useWorkspace();
+  const source = initialPosts.map((post) => feed?.find((item) => item.id === post.id) || post);
+  const likesState = Object.fromEntries(
+    source.map((post) => [post.id, changes[post.id]?.liked ?? post.has_liked]),
+  );
+  const likesCount = Object.fromEntries(
+    source.map((post) => [post.id, changes[post.id]?.count ?? post.likes_count ?? 0]),
+  );
 
-export function useLikes(
-  initialPosts: Post[],
-  refreshPosts?: () => void
-): UseLikesReturn {
-  const [likesState, setLikesState] = useState<{ [key: string]: boolean }>({});
-  const [likesCount, setLikesCount] = useState<{ [key: string]: number }>({});
-
-  useEffect(() => {
-    if (initialPosts.length > 0) {
-      setLikesState((prev) => {
-        const newState = { ...prev };
-        let hasChanged = false;
-
-        initialPosts.forEach((post) => {
-          const postId = String(post.id);
-          if (newState[postId] !== post.has_liked) {
-            newState[postId] = post.has_liked;
-            hasChanged = true;
-          }
-        });
-
-        return hasChanged ? newState : prev;
-      });
-
-      setLikesCount((prev) => {
-        const newCount = { ...prev };
-        let hasChanged = false;
-
-        initialPosts.forEach((post) => {
-          const postId = String(post.id); // Convert post.id to string
-          if (newCount[postId] !== post.likes_count) {
-            newCount[postId] = post.likes_count;
-            hasChanged = true;
-          }
-        });
-
-        return hasChanged ? newCount : prev;
-      });
-    }
-  }, [initialPosts]);
-
-  // Handle like/unlike requests
-  const handleLike = async (postId: string) => {
-    // Ensure postId is a string
+  async function handleLike(postId: string) {
+    const post = source.find((item) => item.id === postId);
+    if (!post || inFlight.current.has(postId)) return;
+    inFlight.current.add(postId);
+    const previous = changes[postId] || {
+      liked: Boolean(post.has_liked),
+      count: Number(post.likes_count) || 0,
+    };
+    const next = {
+      liked: !previous.liked,
+      count: Math.max(0, previous.count + (previous.liked ? -1 : 1)),
+    };
+    setPendingLikes((current) => ({ ...current, [postId]: true }));
+    setChanges((current) => ({ ...current, [postId]: next }));
     try {
-      const isLiked = likesState[postId] ?? false;
-
-      // Optimistically update the UI
-      setLikesState((prev) => ({ ...prev, [postId]: !isLiked }));
-      setLikesCount((prev) => ({
-        ...prev,
-        [postId]: isLiked ? prev[postId] - 1 : prev[postId] + 1,
-      }));
-
-      if (isLiked) {
-        // Unlike request
-        await axios.delete("http://localhost:8080/posts/unlike", {
-          params: { post_id: postId },
-          withCredentials: true,
-        });
-      } else {
-        // Like request
-        await axios.post("http://localhost:8080/posts/like", null, {
-          params: { post_id: postId },
-          withCredentials: true,
-        });
-      }
-
-      // Refresh posts only when needed
-      if (refreshPosts) refreshPosts();
-    } catch (error) {
-      console.log("Error toggling like:", error);
-
-      // Rollback state changes on failure
-      setLikesState((prev) => ({ ...prev, [postId]: likesState[postId] }));
-      setLikesCount((prev) => ({ ...prev, [postId]: likesCount[postId] }));
+      const response = await fetch(
+        apiUrl(
+          `/posts/${previous.liked ? "unlike" : "like"}?post_id=${encodeURIComponent(postId)}`,
+        ),
+        { method: previous.liked ? "DELETE" : "POST", credentials: "include" },
+      );
+      if (!response.ok) throw new Error();
+      await mutate(
+        isPostFeed,
+        (current: Post[] | undefined) =>
+          current?.map((item) =>
+            item.id === postId ? { ...item, has_liked: next.liked, likes_count: next.count } : item,
+          ),
+        { revalidate: false },
+      );
+      void mutate(isPostFeed);
+      refreshPosts?.();
+    } catch {
+      notify({ message: "Your reaction couldn’t be updated. Please try again.", tone: "error" });
+    } finally {
+      // Shared server data takes over after the request, including failed optimistic changes.
+      setChanges((current) => {
+        const nextChanges = { ...current };
+        delete nextChanges[postId];
+        return nextChanges;
+      });
+      inFlight.current.delete(postId);
+      setPendingLikes((current) => ({ ...current, [postId]: false }));
     }
-  };
-
-  return {
-    likesState,
-    likesCount,
-    handleLike,
-  };
+  }
+  return { likesState, likesCount, pendingLikes, handleLike };
 }

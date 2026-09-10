@@ -5,7 +5,7 @@ export interface Group {
   creator_id: string;
   created_at: string;
   user_status: "member" | "not_joined" | "pending_request" | "pending_invite";
-  }
+}
 
 export interface Post {
   id: string;
@@ -13,8 +13,8 @@ export interface Post {
   content: string;
   image_url?: string;
   created_at: string;
-  nickname?: string;  
-  avatar?: string;  
+  nickname?: string;
+  avatar?: string;
 }
 
 export interface Member {

@@ -1,0 +1,9 @@
+node_modules
+.next*
+out
+coverage
+public
+package-lock.json
+next-env.d.ts
+# Preserve the installed UI primitives; format application code at its call sites.
+src/components/ui

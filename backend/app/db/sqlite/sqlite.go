@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
@@ -13,10 +14,22 @@ import (
 
 // ConnectDB initializes and returns a SQLite database connection with proper settings.
 func ConnectDB() *sql.DB {
-	dsn := "./social_network.db?_busy_timeout=5000"
-	db, err := sql.Open("sqlite", dsn)
+	// An explicit path lets preview and integration tests use an isolated database.
+	dsn := os.Getenv("DATABASE_PATH")
+	if dsn == "" {
+		dsn = "./social_network.db"
+	}
+	separator := "?"
+	if strings.Contains(dsn, "?") {
+		separator = "&"
+	}
+	// modernc applies these pragmas to each pooled connection, including new ones.
+	db, err := sql.Open("sqlite", dsn+separator+"_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)")
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	if _, err := db.Exec("PRAGMA busy_timeout = 5000;"); err != nil {
+		log.Fatalf("Failed to set busy timeout: %v", err)
 	}
 
 	// Enable WAL mode for better concurrency

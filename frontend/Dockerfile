@@ -1,27 +1,21 @@
-# ---- Build Stage ----
-    FROM node:18-alpine AS builder
-    WORKDIR /app
-    
-    # Copy package files and install dependencies
-    COPY package*.json ./
-    RUN npm install
-    
-    # Copy the rest of your application code
-    COPY . .
-    
-    # Build the Next.js application
-    RUN npm run build
-    
-    # ---- Production Stage ----
-    FROM node:18-alpine AS runner
-    WORKDIR /app
-    
-    # Copy the built application from the builder stage
-    COPY --from=builder /app . 
-    
-    # Expose port 3000 to serve the frontend
-    EXPOSE 3000
-    
-    # Start the Next.js server
-    CMD ["npm", "start"]
-    
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+ARG NEXT_PUBLIC_API_URL=http://localhost:8080
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+COPY --from=builder --chown=node:node /app/public ./public
+USER node
+EXPOSE 3000
+CMD ["node", "server.js"]

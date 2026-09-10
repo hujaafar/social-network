@@ -1,4 +1,5 @@
 "use client";
+import { apiUrl } from "@/lib/api";
 
 import React from "react";
 import axios from "axios";
@@ -13,17 +14,14 @@ interface DeleteGroupButtonProps {
 
 const MySwal = withReactContent(Swal);
 
-export function DeleteGroupButton({
-  groupId,
-  onDelete,
-}: DeleteGroupButtonProps) {
+export function DeleteGroupButton({ groupId, onDelete }: DeleteGroupButtonProps) {
   const handleDelete = async () => {
     const result = await MySwal.fire({
       title: "Delete Group?",
       text: "Are you sure you want to delete this group?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#6C5CE7",
+      confirmButtonColor: "#bc4312",
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, delete",
       cancelButtonText: "Cancel",
@@ -31,20 +29,17 @@ export function DeleteGroupButton({
 
     if (result.isConfirmed) {
       try {
-        const response = await axios.delete(
-          "http://localhost:8080/groups/delete",
-          {
-            data: { group_id: groupId },
-            withCredentials: true,
-          }
-        );
+        const response = await axios.delete(apiUrl("/groups/delete"), {
+          data: { group_id: groupId },
+          withCredentials: true,
+        });
 
         // Show success alert
         await MySwal.fire({
           title: "Group Deleted",
           text: response.data,
           icon: "success",
-          confirmButtonColor: "#6C5CE7",
+          confirmButtonColor: "#bc4312",
         });
 
         if (onDelete) onDelete();
@@ -58,14 +53,14 @@ export function DeleteGroupButton({
               title: "Forbidden",
               text: "You are not the group creator. Only the creator can delete this group.",
               icon: "error",
-              confirmButtonColor: "#6C5CE7",
+              confirmButtonColor: "#bc4312",
             });
           } else {
             await MySwal.fire({
               title: "Error",
               text: error.response?.data || "Error deleting group.",
               icon: "error",
-              confirmButtonColor: "#6C5CE7",
+              confirmButtonColor: "#bc4312",
             });
           }
         } else {
@@ -74,7 +69,7 @@ export function DeleteGroupButton({
             title: "Unexpected Error",
             text: "An unexpected error occurred while deleting the group.",
             icon: "error",
-            confirmButtonColor: "#6C5CE7",
+            confirmButtonColor: "#bc4312",
           });
         }
       }

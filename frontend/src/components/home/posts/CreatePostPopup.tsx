@@ -1,6 +1,7 @@
-import { useState } from "react";
+"use client";
+/* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -14,257 +15,243 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Image, Globe, Lock, Users, User } from "lucide-react";
+import { ImagePlus, ArrowUpRight, X } from "lucide-react";
 import { useFollowers } from "@/lib/hooks/swr/useFollowers";
 import Cookies from "js-cookie";
-import Alert from "@/components/ui/alert";
-
-interface CreatePostPopupProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onCreatePost: (post: Post[]) => void;
-}
-interface Follower {
-  id: string;
-  nickname: string;
-}
-
-// Define a type for a post
-interface Post {
-  id: string;
-  content: string;
-  privacy: string;
-  imageUrl?: string;
-  createdAt: string;
-}
-
+import { apiUrl } from "@/lib/api";
+import { imageFileError } from "@/lib/image-file";
 export function CreatePostPopup({
   isOpen,
   onClose,
   onCreatePost,
-}: CreatePostPopupProps) {
+  onCloseAutoFocus,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreatePost: () => void;
+  onCloseAutoFocus: (event: Event) => void;
+}) {
   const [content, setContent] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState("");
   const [privacy, setPrivacy] = useState("public");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [error, setError] = useState("");
-  const [alert, setAlert] = useState<{
-    type: "success" | "error" | "info";
-    message: string;
-  } | null>(null);
-  const maxChars = 500; // Maximum allowed characters
-
-  // Get logged-in user's ID from cookies and fetch real followers
-  const loggedInUserId = Cookies.get("user_id") || "";
-  const { followers, isLoading: followersLoading } =
-    useFollowers(loggedInUserId);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0]);
+  const [pending, setPending] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const busy = useRef(false);
+  const characterCount = Array.from(content).length;
+  function attach(file?: File) {
+    if (!file || busy.current) return;
+    const validation = imageFileError(file);
+    setError(validation || "");
+    if (!validation) setImage(file);
+  }
+  const { followers, isLoading: followersLoading } = useFollowers(Cookies.get("user_id") || "");
+  useEffect(() => {
+    if (!image) {
+      setPreview("");
+      return;
     }
-  };
-
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const text = e.target.value;
-    if (text.length <= maxChars) {
-      setContent(text);
-      setError("");
-    } else {
-      setError(`Content cannot exceed ${maxChars} characters.`);
-    }
-  };
-
-  const handleSubmit = async () => {
+    const url = URL.createObjectURL(image);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [image]);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!content.trim() || busy.current || characterCount > 500) return;
+    busy.current = true;
+    setPending(true);
+    setError("");
     try {
-      if (!content.trim()) {
-        setAlert({ type: "info", message: "Content cannot be empty." });
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("content", content.trim());
-      formData.append("privacy", privacy);
-      if (image) {
-        formData.append("file", image);
-      }
-      if (privacy === "private") {
-        selectedUsers.forEach((user) =>
-          formData.append("allowed_users[]", user)
-        );
-      }
-
-      const response = await fetch("http://localhost:8080/posts", {
+      const form = new FormData();
+      form.set("content", content.trim());
+      form.set("privacy", privacy);
+      if (image) form.set("file", image);
+      if (privacy === "private") selectedUsers.forEach((id) => form.append("allowed_users[]", id));
+      const response = await fetch(apiUrl("/posts"), {
         method: "POST",
-        body: formData,
+        body: form,
         credentials: "include",
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to create post");
-      }
-
-      const result = await response.json();
-      setAlert({ type: "success", message: "Post created successfully!" });
-
-      onCreatePost([result]);
-
-      // Reset form
+      if (!response.ok) throw new Error();
+      onCreatePost();
       setContent("");
+      setImage(null);
       setPrivacy("public");
       setSelectedUsers([]);
-      setImage(null);
       onClose();
-    } catch (error) {
-      console.log("Error creating post:", error);
-      setAlert({ type: "error", message: "Failed to create post." });
+    } catch {
+      setError("Your post couldn’t be shared. Your draft is still here—try again.");
+    } finally {
+      busy.current = false;
+      setPending(false);
     }
-  };
-
+  }
   return (
-    <>
-      {alert && (
-        <Alert
-          title={alert.type === "success" ? "Success" : "Error"}
-          message={alert.message}
-          type={alert.type}
-          duration={5000}
-          onClose={() => setAlert(null)}
-        />
-      )}
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">
-              Create New Post
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid gap-6 py-4">
-            <Textarea
-              placeholder="What's on your mind?"
-              value={content}
-              onChange={handleContentChange}
-              className="min-h-[180px] text-lg"
-            />
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-            <p className="text-sm text-gray-500">
-              Character count: {content.length}/{maxChars}
-            </p>
-
-            {/* Image Upload */}
-            <div className="flex items-center gap-4">
-              <Label
-                htmlFor="image-upload"
-                className="cursor-pointer flex items-center gap-2 text-[#6C5CE7] hover:text-[#6C5CE7]/80"
-              >
-                <Image className="h-6 w-6" />
-                <span className="text-base font-medium">
-                  {image ? "Change Image" : "Add Image"}
-                </span>
-              </Label>
-              <Input
-                id="image-upload"
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !pending) {
+          setDragging(false);
+          onClose();
+        }
+      }}
+    >
+      <DialogContent
+        className="post-compose-dialog"
+        onCloseAutoFocus={onCloseAutoFocus}
+        onDragOver={(event) => {
+          if (event.dataTransfer.types.includes("Files")) {
+            event.preventDefault();
+            setDragging(true);
+          }
+        }}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          attach(event.dataTransfer.files[0]);
+        }}
+      >
+        {dragging && (
+          <div className="compose-drop-overlay" aria-hidden="true">
+            <ImagePlus size={40} />
+            <strong>Drop a little of your world.</strong>
+            <span>JPG, PNG or GIF · up to 10 MB</span>
+          </div>
+        )}
+        <DialogHeader>
+          <span className="eyebrow">A LITTLE OF YOUR EVERYDAY</span>
+          <DialogTitle>Share a moment.</DialogTitle>
+          <DialogDescription>Big ideas, small updates. Make it your own.</DialogDescription>
+        </DialogHeader>
+        <form
+          ref={formRef}
+          onSubmit={submit}
+          className="post-compose-form"
+          onKeyDown={(event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+              event.preventDefault();
+              formRef.current?.requestSubmit();
+            }
+          }}
+        >
+          <Label htmlFor="post-content" className="sr-only">
+            Your post
+          </Label>
+          <Textarea
+            id="post-content"
+            placeholder="What’s on your mind?"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            aria-describedby="compose-counter"
+            required
+            disabled={pending}
+          />
+          <div className="compose-attachment">
+            <label className="attachment-label">
+              <ImagePlus size={18} />
+              {image ? "Change photo" : "Add a photo or GIF"}
+              <input
                 type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
+                accept="image/jpeg,image/png,image/gif"
+                className="sr-only"
+                disabled={pending}
+                onChange={(e) => {
+                  attach(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
               />
-              {image && (
-                <span className="text-sm text-gray-500">{image.name}</span>
-              )}
+            </label>
+            <span id="compose-counter" className={characterCount > 500 ? "inline-error" : ""}>
+              {characterCount}/500
+            </span>
+          </div>
+          {preview && (
+            <div className="attachment-preview">
+              <img src={preview} alt="Photo to share" />
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Remove photo"
+                disabled={pending}
+                onClick={() => setImage(null)}
+              >
+                <X size={17} />
+              </button>
             </div>
-
-            {/* Privacy Selection */}
-            <Select value={privacy} onValueChange={setPrivacy}>
-              <SelectTrigger className="w-full text-base">
-                <SelectValue placeholder="Select privacy" />
+          )}
+          <div className="form-field">
+            <Label htmlFor="post-audience">Who can see this?</Label>
+            <Select value={privacy} onValueChange={setPrivacy} disabled={pending}>
+              <SelectTrigger id="post-audience">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="public">
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-5 w-5" />
-                    <span>Public</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="almost-private">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    <span>Almost Private</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="private">
-                  <div className="flex items-center gap-2">
-                    <Lock className="h-5 w-5" />
-                    <span>Private</span>
-                  </div>
-                </SelectItem>
+                <SelectItem value="public">Everyone</SelectItem>
+                <SelectItem value="almost-private">My followers</SelectItem>
+                <SelectItem value="private">Selected followers</SelectItem>
               </SelectContent>
             </Select>
-
-            {/* Private user selection using real followers */}
-            {privacy === "private" && (
-              <div>
-                <Label className="mb-2 block font-medium">
-                  Select users who can see this post:
-                </Label>
-                {followersLoading ? (
-                  <p>Loading followers...</p>
-                ) : (
-                  <div className="max-h-60 overflow-y-auto border p-2 rounded space-y-2">
-                    {followers && followers.length > 0 ? (
-                      followers.map((follower: Follower) => (
-                        <div key={follower.id} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`follower-${follower.id}`}
-                            className="mr-2"
-                            checked={selectedUsers.includes(follower.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedUsers((prev) => [
-                                  ...prev,
-                                  follower.id,
-                                ]);
-                              } else {
-                                setSelectedUsers((prev) =>
-                                  prev.filter((id) => id !== follower.id)
-                                );
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={`follower-${follower.id}`}
-                            className="flex items-center gap-2"
-                          >
-                            <User className="h-5 w-5" />
-                            <span>{follower.nickname}</span>
-                          </label>
-                        </div>
-                      ))
-                    ) : (
-                      <p>No followers available</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
-
+          {privacy === "private" && (
+            <fieldset className="audience-picker">
+              <legend>Choose your audience</legend>
+              {followersLoading ? (
+                <p className="inline-note">Loading your followers…</p>
+              ) : followers?.length ? (
+                followers.map((person: { id: string; nickname: string }) => (
+                  <label key={person.id}>
+                    <input
+                      type="checkbox"
+                      disabled={pending}
+                      checked={selectedUsers.includes(person.id)}
+                      onChange={(e) =>
+                        setSelectedUsers((ids) =>
+                          e.target.checked
+                            ? [...ids, person.id]
+                            : ids.filter((id) => id !== person.id),
+                        )
+                      }
+                    />
+                    {person.nickname}
+                  </label>
+                ))
+              ) : (
+                <p className="inline-note">
+                  You don’t have followers yet. This post will be visible only to you.
+                </p>
+              )}
+            </fieldset>
+          )}
+          {error && (
+            <p role="alert" className="inline-error">
+              {error}
+            </p>
+          )}
+          <p className="compose-draft-note">
+            Your draft stays here while you browse. <span>Ctrl / ⌘ + Enter to share</span>
+          </p>
           <DialogFooter>
             <Button
-              onClick={handleSubmit}
-              className="w-full bg-[#6C5CE7] hover:bg-[#6C5CE7]/90 text-white py-6 text-lg font-semibold"
+              type="submit"
+              className="auth-submit"
+              disabled={pending || !content.trim() || characterCount > 500}
             >
-              Post
+              {pending ? "Sharing…" : "Share your moment"}
+              <ArrowUpRight size={18} />
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -43,7 +43,7 @@ export function useWebSocket(url: string) {
         console.warn("Cannot send message, WebSocket is not connected");
       }
     },
-    [socket, isConnected]
+    [socket, isConnected],
   );
 
   return { socket, isConnected, sendMessage };

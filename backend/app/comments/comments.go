@@ -8,8 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"social-network/app/notifications"
+	"social-network/app/posts"
 	"social-network/app/sessions"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -51,14 +53,18 @@ func AddCommentHandler(db *sql.DB) http.HandlerFunc {
 		postID := r.FormValue("post_id")
 		content := r.FormValue("content")
 
-		if postID == "" || content == "" {
+		if postID == "" || strings.TrimSpace(content) == "" {
 			http.Error(w, "Post ID and content are required", http.StatusBadRequest)
 			return
 		}
 
 		// Enforce word count limit (max 250 characters)
-		if len(content) > 250 {
+		if utf8.RuneCountInString(content) > 250 {
 			http.Error(w, "Content cannot exceed 250 characters", http.StatusBadRequest)
+			return
+		}
+
+		if !posts.RequireVisible(db, w, r, postID, userID) {
 			return
 		}
 
@@ -199,19 +205,28 @@ func GetCommentsByPostHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		userID, err := sessions.GetUserIDFromSession(r)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 		postID := r.URL.Query().Get("post_id")
 		if postID == "" {
 			http.Error(w, "Missing post_id parameter", http.StatusBadRequest)
 			return
 		}
 
-		// Query to fetch comments along with user's nickname and avatar
-		rows, err := db.Query(`
-			SELECT c.id, c.post_id, c.user_id, u.nickname, u.avatar, c.content, c.image_url, c.created_at
+		if !posts.RequireVisible(db, w, r, postID, userID) {
+			return
+		}
+		w.Header().Set("Cache-Control", "private, no-store")
+		// Nullable profile/media fields are normal for members without an avatar.
+		rows, err := db.QueryContext(r.Context(), `
+			SELECT c.id, c.post_id, c.user_id, COALESCE(u.nickname, ''), COALESCE(u.avatar, ''), c.content, COALESCE(c.image_url, ''), c.created_at
 			FROM comments c
 			JOIN users u ON c.user_id = u.id
 			WHERE c.post_id = ?
-			ORDER BY c.created_at ASC
+			ORDER BY c.created_at ASC, c.id ASC
 		`, postID)
 		if err != nil {
 			http.Error(w, "Failed to fetch comments", http.StatusInternalServerError)
@@ -231,7 +246,7 @@ func GetCommentsByPostHandler(db *sql.DB) http.HandlerFunc {
 			CreatedAt string `json:"created_at"`
 		}
 
-		var comments []CommentResponse
+		comments := make([]CommentResponse, 0)
 		for rows.Next() {
 			var comment CommentResponse
 			if err := rows.Scan(&comment.ID, &comment.PostID, &comment.UserID, &comment.Nickname, &comment.Avatar, &comment.Content, &comment.ImageURL, &comment.CreatedAt); err != nil {
@@ -241,11 +256,14 @@ func GetCommentsByPostHandler(db *sql.DB) http.HandlerFunc {
 			comments = append(comments, comment)
 		}
 
+		if rows.Err() != nil {
+			http.Error(w, "Failed to read comments", http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(comments)
 	}
 }
-
 
 // Helper function to check allowed file extensions
 func contains(slice []string, item string) bool {

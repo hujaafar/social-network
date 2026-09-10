@@ -1,277 +1,204 @@
 "use client";
-
-import { useState } from "react";
-import Link from "next/link"; // Added import for Link
-import { Upload } from "lucide-react";
+/* eslint-disable @next/next/no-img-element -- User uploads and blob previews preserve native GIF playback without proxying private media. */
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight, Upload, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import Alert from "@/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { PasswordInput } from "@/components/auth/password";
-import { LoginButtons } from "@/components/auth/login-buttons";
+import { apiUrl } from "@/lib/api";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-
 export default function RegisterPage() {
-  const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const router = useRouter();
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [avatar, setAvatar] = useState<File | null>(null);
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [nickname, setNickname] = useState("");
-  const [about, setAbout] = useState("");
-
-  // Handle avatar file preview
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setAvatar(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const [preview, setPreview] = useState("");
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  useEffect(() => {
+    if (!avatar) {
+      setPreview("");
+      return;
     }
-  };
-
-  // Handle form submission
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    const url = URL.createObjectURL(avatar);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [avatar]);
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
+    if (pending) return;
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get("email") || "").trim();
+    form.set("email", email);
+    form.set("password", password);
+    if (avatar) form.set("avatar", avatar);
+    else form.delete("avatar");
+    setPending(true);
+    setError("");
     try {
-      const formData = new FormData();
-      formData.append("email", email);
-      formData.append("password", password);
-      formData.append("first_name", firstName);
-      formData.append("last_name", lastName);
-      // Only append nickname if it's not empty.
-      if (nickname.trim() !== "") {
-        formData.append("nickname", nickname);
+      await axios.post(apiUrl("/register"), form, { withCredentials: true });
+      setRegistered(true);
+      try {
+        await axios.post(
+          apiUrl("/login"),
+          { identifier: email, password },
+          { withCredentials: true },
+        );
+        router.replace("/");
+        router.refresh();
+      } catch {
+        setError("Your account is ready. Please sign in to continue.");
       }
-      formData.append("about_me", about);
-      formData.append("date_of_birth", dateOfBirth);
-      if (avatar) {
-        formData.append("avatar", avatar);
-      }
-
-      // Send registration data to the backend
-      await axios.post("http://localhost:8080/register", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true,
-      });
-
-      // Immediately login using the same email and password
-      await axios.post(
-        "http://localhost:8080/login",
-        { identifier: email, password },
-        { withCredentials: true }
+    } catch (err) {
+      const message = axios.isAxiosError(err) ? err.response?.data : undefined;
+      setError(
+        typeof message === "string" && message.startsWith("Validation failed:")
+          ? message.replace("Validation failed:", "").trim()
+          : "We couldn’t create your account. Check your details or try a different email and nickname.",
       );
-
-      // Redirect to the home page after successful login
-      router.push("/");
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setAlert({ type: "error", message: err.response?.data || "An error occurred" });
-      } else {
-        setAlert({ type: "error", message: "An unexpected error occurred" });
-      }
+    } finally {
+      setPending(false);
     }
-  };
-
+  }
   return (
-   <>
-   {alert && (
-        <Alert
-          title={alert.type === "success" ? "Success" : "Error"}
-          message={alert.message}
-          type={alert.type}
-          duration={5000}
-          onClose={() => setAlert(null)}
-        />
-      )}
-     <AuthLayout
-      title="Create an Account 🚀"
-      subtitle="Join our community and start sharing your moments"
+    <AuthLayout
+      title="You belong here."
+      subtitle="A few details, and you’re part of the conversation."
     >
-      <Card className="border-gray-200 text-[#6C5CE7]">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-xl text-[#6C5CE7]">
-            Personal Information
-          </CardTitle>
-          <CardDescription className="text-[#6C5CE7]/70">
-            Fill in your details to create your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pr-4">
-          <form className="space-y-4" onSubmit={handleRegister}>
-            {/* Name fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName" className="text-[#6C5CE7]">
-                  First Name
-                </Label>
-                <Input
-                  id="firstName"
-                  placeholder="First Name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="lastName" className="text-[#6C5CE7]">
-                  Last Name
-                </Label>
-                <Input
-                  id="lastName"
-                  placeholder="Last Name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Email field */}
-            <div>
-              <Label htmlFor="email" className="text-[#6C5CE7]">
-                Email
-              </Label>
+      <form onSubmit={submit} className="register-form" aria-busy={pending}>
+        <div className="register-grid">
+          <div className="form-field">
+            <Label htmlFor="first-name">First name</Label>
+            <Input
+              id="first-name"
+              name="first_name"
+              autoComplete="given-name"
+              required
+              maxLength={15}
+              pattern="[A-Za-z]+"
+              title="Up to 15 letters"
+            />
+          </div>
+          <div className="form-field">
+            <Label htmlFor="last-name">Last name</Label>
+            <Input
+              id="last-name"
+              name="last_name"
+              autoComplete="family-name"
+              required
+              maxLength={15}
+              pattern="[A-Za-z]+"
+              title="Up to 15 letters"
+            />
+          </div>
+        </div>
+        <div className="form-field">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            placeholder="you@example.com"
+          />
+        </div>
+        <PasswordInput
+          id="password"
+          label="Password"
+          value={password}
+          setValue={setPassword}
+          required
+          autoComplete="new-password"
+        />
+        <p className="inline-note">
+          Use 8+ characters with uppercase, lowercase, a number and a symbol.
+        </p>
+        <div className="form-field">
+          <Label htmlFor="birthday">Date of birth</Label>
+          <Input
+            id="birthday"
+            name="date_of_birth"
+            type="date"
+            autoComplete="bday"
+            required
+            max={new Date().toISOString().slice(0, 10)}
+          />
+        </div>
+        <details className="optional-fields">
+          <summary>
+            Make it yours <span className="inline-note">— optional</span>
+          </summary>
+          <div className="register-form">
+            <div className="form-field">
+              <Label htmlFor="nickname">Nickname</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                id="nickname"
+                name="nickname"
+                maxLength={15}
+                pattern="[A-Za-z0-9]+"
+                placeholder="What should we call you?"
               />
             </div>
-
-            {/* Password field */}
-            <div>
-              <Label htmlFor="password" className="text-[#6C5CE7]">
-                Password
-              </Label>
-              <PasswordInput
-                id="password"
-                label="Create a strong password"
-                value={password}
-                setValue={setPassword}
-                required
-              />
-            </div>
-
-            {/* Date of Birth and Nickname fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="dob" className="text-[#6C5CE7]">
-                  Date of Birth
-                </Label>
-                <Input
-                  id="dob"
-                  type="date"
-                  value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="nickname" className="text-[#6C5CE7]">
-                  Nickname
-                </Label>
-                <Input
-                  id="nickname"
-                  placeholder="Nickname (Optional)"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Avatar upload */}
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50">
-                {avatarPreview ? (
-                  <img
-                    src={avatarPreview}
-                    alt="Avatar preview"
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  <Upload className="h-6 w-6 text-gray-400" />
-                )}
-              </div>
-              <div className="flex-1">
-                <Input
-                  id="avatar"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => document.getElementById("avatar")?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-2" /> Upload Image
-                </Button>
-              </div>
-            </div>
-
-            {/* About field */}
-            <div>
-              <Label htmlFor="about" className="text-[#6C5CE7]">
-                About
-              </Label>
+            <div className="form-field">
+              <Label htmlFor="about">About you</Label>
               <Textarea
                 id="about"
-                placeholder="Tell us about yourself... (Optional)"
-                value={about}
-                onChange={(e) => setAbout(e.target.value)}
-                className="min-h-[80px]"
+                name="about_me"
+                maxLength={50}
+                placeholder="A little something about you (50 characters)"
               />
             </div>
-
-            {/* Submit button */}
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-[#6C5CE7] to-[#a598ff] hover:opacity-90 transition-opacity"
-            >
-              Create Account
-            </Button>
-          </form>
-
-          <div className="mt-6">
-            <LoginButtons />
+            <div className="avatar-upload">
+              {preview ? (
+                <img src={preview} alt="Your avatar preview" />
+              ) : (
+                <Upload size={25} aria-hidden="true" />
+              )}
+              <div className="form-field">
+                <Label htmlFor="avatar">Profile photo</Label>
+                <Input
+                  id="avatar"
+                  name="avatar"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (file && file.size > 10 * 1024 * 1024) {
+                      setError("Choose an image smaller than 10 MB.");
+                      e.target.value = "";
+                      setAvatar(null);
+                    } else {
+                      setAvatar(file);
+                      setError("");
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </div>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="text-[#6C5CE7] hover:underline font-medium"
-            >
-              Sign in
-            </Link>
+        </details>
+        {error && (
+          <p className="inline-error" role="alert">
+            {error}
           </p>
-        </CardContent>
-      </Card>
+        )}
+        <Button className="auth-submit" type="submit" disabled={pending || registered}>
+          {pending ? "Creating your space…" : registered ? "Account created" : "Find my people"}
+          {pending ? <LoaderCircle size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+        </Button>
+      </form>
+      <div className="auth-switch">
+        <span>Already part of the circle?</span>
+        <Link href="/login">
+          Sign in <ArrowUpRight size={16} />
+        </Link>
+      </div>
     </AuthLayout>
-   </>
   );
 }

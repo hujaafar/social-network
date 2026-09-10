@@ -1,16 +1,11 @@
 "use client";
+import { apiUrl, API_ORIGIN, socketUrl } from "@/lib/api";
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import Cookies from "js-cookie";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageCircle, Users, Calendar } from "lucide-react";
 import PostsTab from "@/components/groups/PostsTab";
@@ -62,7 +57,7 @@ export default function GroupView() {
 
   // WebSocket hook
   const { socket, isConnected, sendMessage } = useWebSocket(
-    `ws://localhost:8080/groups/chat?group_id=${params.id}`
+    `${socketUrl("")}/groups/chat?group_id=${params.id}`,
   );
 
   // Fetch group data
@@ -74,25 +69,12 @@ export default function GroupView() {
         const groupId = params.id as string;
 
         // -- IMPORTANT: We now call "/groups/details" with ?group_id=...
-        const [groupResponse, postsResponse, membersResponse, eventsResponse] =
-          await Promise.all([
-            axios.get(
-              `http://localhost:8080/groups/details?group_id=${groupId}`,
-              { withCredentials: true }
-            ),
-            axios.get(
-              `http://localhost:8080/groups/posts?group_id=${groupId}`,
-              { withCredentials: true }
-            ),
-            axios.get(
-              `http://localhost:8080/groups/members?group_id=${groupId}`,
-              { withCredentials: true }
-            ),
-            axios.get(
-              `http://localhost:8080/groups/events?group_id=${groupId}`,
-              { withCredentials: true }
-            ),
-          ]);
+        const [groupResponse, postsResponse, membersResponse, eventsResponse] = await Promise.all([
+          axios.get(`${API_ORIGIN}/groups/details?group_id=${groupId}`, { withCredentials: true }),
+          axios.get(`${API_ORIGIN}/groups/posts?group_id=${groupId}`, { withCredentials: true }),
+          axios.get(`${API_ORIGIN}/groups/members?group_id=${groupId}`, { withCredentials: true }),
+          axios.get(`${API_ORIGIN}/groups/events?group_id=${groupId}`, { withCredentials: true }),
+        ]);
 
         // If no group data, redirect back
         if (!groupResponse?.data || Object.keys(groupResponse.data).length === 0) {
@@ -111,7 +93,7 @@ export default function GroupView() {
         setMembers(membersResponse?.data || []);
         setEvents(eventsResponse?.data || []);
       } catch (error) {
-       console.log("Error fetching group data:", error);
+        console.log("Error fetching group data:", error);
         router.push("/groups");
       } finally {
         setIsLoading(false);
@@ -136,14 +118,10 @@ export default function GroupView() {
     if (postFile) formData.append("file", postFile);
 
     try {
-      const response = await axios.post(
-        "http://localhost:8080/groups/posts/create",
-        formData,
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      const response = await axios.post(apiUrl("/groups/posts/create"), formData, {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       setPosts((prevPosts) => [
         {
@@ -161,7 +139,7 @@ export default function GroupView() {
     } catch (error) {
       setAlert({
         type: "error",
-        message: "Failed to create post. Please try again. "+error ,
+        message: "Failed to create post. Please try again. " + error,
       });
     }
   };
@@ -175,20 +153,17 @@ export default function GroupView() {
         const rsvpResponses = await Promise.all(
           events.map((event) =>
             axios
-              .get(
-                `http://localhost:8080/groups/events/rsvps?event_id=${event.id}`,
-                { withCredentials: true }
-              )
-              .catch(() => null)
-          )
+              .get(`${API_ORIGIN}/groups/events/rsvps?event_id=${event.id}`, {
+                withCredentials: true,
+              })
+              .catch(() => null),
+          ),
         );
 
-        const rsvpData = rsvpResponses.flatMap(
-          (response) => response?.data || []
-        );
+        const rsvpData = rsvpResponses.flatMap((response) => response?.data || []);
         setRsvps(rsvpData);
       } catch (error) {
-       console.log("Error fetching RSVPs:", error);
+        console.log("Error fetching RSVPs:", error);
       }
     };
 
@@ -206,14 +181,14 @@ export default function GroupView() {
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/groups/events/create",
+        apiUrl("/groups/events/create"),
         {
           group_id: params.id,
           title: eventTitle,
           description: eventDescription,
           event_date: eventDateTime,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       setEvents((prevEvents) => [
@@ -235,7 +210,7 @@ export default function GroupView() {
     } catch (error) {
       setAlert({
         type: "error",
-        message: "Failed to create event. Please try again. "+error,
+        message: "Failed to create event. Please try again. " + error,
       });
     }
   };
@@ -244,30 +219,26 @@ export default function GroupView() {
   const handleRSVP = async (eventId: string, status: "going" | "not going") => {
     try {
       await axios.post(
-        "http://localhost:8080/groups/events/rsvp",
+        apiUrl("/groups/events/rsvp"),
         { event_id: eventId, status },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       setEvents((prev) =>
-        prev.map((ev) =>
-          ev.id === eventId ? { ...ev, user_status: status } : ev
-        )
+        prev.map((ev) => (ev.id === eventId ? { ...ev, user_status: status } : ev)),
       );
 
       setRsvps((prev) => {
         const existingRSVP = prev.find((r) => r.event_id === eventId);
         if (existingRSVP) {
-          return prev.map((rsvp) =>
-            rsvp.event_id === eventId ? { ...rsvp, status } : rsvp
-          );
+          return prev.map((rsvp) => (rsvp.event_id === eventId ? { ...rsvp, status } : rsvp));
         }
         return [...prev, { event_id: eventId, user_id: "me", status }];
       });
     } catch (error) {
       setAlert({
         type: "error",
-        message: "Failed to RSVP. Please try again. "+error,
+        message: "Failed to RSVP. Please try again. " + error,
       });
     }
   };
@@ -278,12 +249,12 @@ export default function GroupView() {
     const fetchMessages = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8080/groups/chat/messages?group_id=${params.id}`,
-          { withCredentials: true }
+          `${API_ORIGIN}/groups/chat/messages?group_id=${params.id}`,
+          { withCredentials: true },
         );
         setMessages(response.data);
       } catch (error) {
-       console.log("Error fetching previous chat messages:", error);
+        console.log("Error fetching previous chat messages:", error);
       }
     };
     fetchMessages();
@@ -328,18 +299,10 @@ export default function GroupView() {
 
   // Loading states
   if (isLoading) {
-    return (
-      <div className="text-center py-10 text-gray-500">
-        Loading group details...
-      </div>
-    );
+    return <div className="text-center py-10 text-gray-500">Loading group details...</div>;
   }
   if (!group) {
-    return (
-      <div className="text-center py-10 text-red-500">
-        Group not found.
-      </div>
-    );
+    return <div className="text-center py-10 text-red-500">Group not found.</div>;
   }
 
   return (
@@ -353,39 +316,33 @@ export default function GroupView() {
           onClose={() => setAlert(null)}
         />
       )}
-      <div className="min-h-screen bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="page-wrap group-detail-page">
+        <div className="group-detail-inner">
           <Card className="border-none shadow-sm">
-            <CardHeader className="bg-[#6C5CE7] text-white rounded-t-lg p-6">
-              <div className="flex items-center justify-between">
+            <CardHeader className="group-detail-heading">
+              <div className="group-heading-row">
                 <div>
-                  <CardTitle className="text-2xl">{group.name}</CardTitle>
-                  <CardDescription className="text-slate-200 mt-2">
-                    Created on{" "}
-                    {new Date(group.created_at).toLocaleDateString()}
+                  <CardTitle className="page-title">{group.name}</CardTitle>
+                  <CardDescription className="group-created">
+                    Created on {new Date(group.created_at).toLocaleDateString()}
                   </CardDescription>
                 </div>
-                <div className="flex gap-4">
-  <InviteButton groupId={group.id} onInviteSuccess={() => {}} />
+                <div className="group-heading-actions">
+                  <InviteButton groupId={group.id} onInviteSuccess={() => {}} />
 
-  <LeaveGroupButton
-    groupId={group.id}
-    onLeave={() => router.push("/groups")}
-  />
+                  <LeaveGroupButton groupId={group.id} onLeave={() => router.push("/groups")} />
 
- {isCreator && <DeleteGroupButton
-    groupId={group.id}
-    onDelete={() => router.push("/groups")}
-  />}
-</div>
-
+                  {isCreator && (
+                    <DeleteGroupButton groupId={group.id} onDelete={() => router.push("/groups")} />
+                  )}
+                </div>
               </div>
             </CardHeader>
 
             <CardContent className="p-6">
               <p className="text-gray-700 mb-6">{group.description}</p>
               <Tabs defaultValue="posts" className="w-full">
-                <TabsList className="w-full max-w-md grid grid-cols-4 gap-4 mx-auto mb-6">
+                <TabsList className="w-full grid grid-cols-4 gap-1 mb-6 group-tabs">
                   <TabsTrigger value="posts">
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Posts
@@ -435,13 +392,9 @@ export default function GroupView() {
                 <TabsContent value="members">
                   <div className="space-y-4">
                     {isLoadingMembers ? (
-                      <p className="text-center text-gray-500">
-                        Loading members...
-                      </p>
+                      <p className="text-center text-gray-500">Loading members...</p>
                     ) : members.length === 0 ? (
-                      <p className="text-center text-gray-500">
-                        No members yet.
-                      </p>
+                      <p className="text-center text-gray-500">No members yet.</p>
                     ) : (
                       members.map((member) => (
                         <div
@@ -453,22 +406,18 @@ export default function GroupView() {
                               <AvatarImage
                                 src={
                                   member.avatar
-                                    ? `http://localhost:8080/avatars/${member.avatar}`
+                                    ? `${API_ORIGIN}/avatars/${member.avatar}`
                                     : "/profile.png"
                                 }
                               />
-                              <AvatarFallback>
-                                {member.first_name[0]}
-                              </AvatarFallback>
+                              <AvatarFallback>{member.first_name[0]}</AvatarFallback>
                             </Avatar>
                             <div>
                               <p className="font-semibold">
                                 {member.first_name} {member.last_name}
                               </p>
                               {member.nickname && (
-                                <p className="text-gray-500 text-sm">
-                                  @{member.nickname}
-                                </p>
+                                <p className="text-gray-500 text-sm">@{member.nickname}</p>
                               )}
                             </div>
                           </div>
@@ -483,9 +432,7 @@ export default function GroupView() {
                               userId={member.id}
                               onRemove={() => {
                                 // Remove the member from state after success
-                                setMembers((prev) =>
-                                  prev.filter((m) => m.id !== member.id)
-                                );
+                                setMembers((prev) => prev.filter((m) => m.id !== member.id));
                               }}
                             />
                           )}

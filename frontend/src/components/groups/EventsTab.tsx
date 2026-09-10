@@ -47,16 +47,14 @@ export default function EventsTab({
         <h3 className="text-2xl font-bold text-gray-800">Upcoming Events</h3>
         <Dialog open={isCreatingEvent} onOpenChange={setIsCreatingEvent}>
           <DialogTrigger asChild>
-            <Button className="bg-[#6C5CE7] text-white flex items-center hover:bg-[#5b4edc] transition-all">
+            <Button className="bg-[#bc4312] text-white flex items-center hover:bg-[#5b4edc] transition-all">
               <Plus className="w-5 h-5 mr-2" />
               Create Event
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">
-                Create New Event
-              </DialogTitle>
+              <DialogTitle className="text-lg font-semibold">Create New Event</DialogTitle>
             </DialogHeader>
             <Input
               placeholder="Event Title"
@@ -77,7 +75,7 @@ export default function EventsTab({
               className="mb-4"
             />
             <Button
-              className="w-full bg-[#6C5CE7] text-white hover:bg-[#5b4edc] transition-all"
+              className="w-full bg-[#bc4312] text-white hover:bg-[#5b4edc] transition-all"
               onClick={handleCreateEvent}
             >
               Create Event
@@ -97,9 +95,7 @@ export default function EventsTab({
             >
               <CardContent className="p-6">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-xl font-bold text-[#6C5CE7]">
-                    {event.title}
-                  </h4>
+                  <h4 className="text-xl font-bold text-[#bc4312]">{event.title}</h4>
                   <div className="flex items-center text-gray-600 text-sm">
                     <CalendarDays className="w-5 h-5 mr-1" />
                     {new Date(event.event_date).toLocaleString()}
@@ -139,8 +135,8 @@ export default function EventsTab({
                       {event.user_status === "going"
                         ? "Going"
                         : event.user_status === "not going"
-                        ? "Not Going"
-                        : "None"}
+                          ? "Not Going"
+                          : "None"}
                     </strong>
                   </p>
                 </div>

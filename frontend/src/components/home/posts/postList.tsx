@@ -1,73 +1,99 @@
 "use client";
-
-import React from "react";
 import Cookies from "js-cookie";
+import { MessageCircle, RefreshCw, Plus } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useLikes } from "@/lib/hooks/useLikes";
-import LoadingSpinner from "@/components/ui/loading-spinner";
-import PostItem from "@/components/home/posts/postItem";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import PostItem from "./postItem";
 import { DeletePostButton } from "./DeletePostButton";
 import { Post } from "@/types/post";
-
-interface PostsListProps {
+interface Props {
   posts: Post[];
   isLoading?: boolean;
   isError?: boolean;
   onSelectPost: (post: Post) => void;
+  onRetry?: () => void;
+  onCreate?: () => void;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
-
 export default function PostsList({
   posts,
   isLoading,
   isError,
   onSelectPost,
-}: PostsListProps) {
-  const { likesState, likesCount, handleLike } = useLikes(posts || [], undefined);
-
+  onRetry,
+  onCreate,
+  emptyTitle = "Every conversation starts somewhere.",
+  emptyDescription = "Share your first moment, or find people through search and circles.",
+}: Props) {
+  const safePosts = Array.isArray(posts) ? posts : [];
+  const { likesState, likesCount, pendingLikes, handleLike } = useLikes(safePosts, onRetry);
+  const reduceMotion = useReducedMotion();
   const currentUserId = Cookies.get("user_id");
-
-  if (isLoading) {
-    return <LoadingSpinner size="large" />;
-  }
-
-  
-  if (isError) {
-    return <div className="text-red-500">Error loading posts. Please try again later.</div>;
-  }
-
-  //  Guard if posts is not an array
-  if (!Array.isArray(posts)) {
-    return <div className="text-red-500">Something went wrong. Please try again.</div>;
-  }
-
-  //  Render the posts
-  return (
-    <div className="space-y-4">
-      {posts.map((post, index) => {
-        const hasLiked = likesState[post.id] ?? false;
-        const postLikesCount = likesCount[post.id] ?? 0;
-
-        return (
-          <div
-            key={post.id || index}
-            className="relative bg-white p-4 rounded-lg shadow"
-          >
-            {/*    if user is owner , display the trash icon in topright corner */}
-            {post.user_id === currentUserId && (
-              <div className="absolute top-2 right-2">
-                <DeletePostButton postId={post.id} />
-              </div>
-            )}
-
-            <PostItem
-              post={post}
-              hasLiked={hasLiked}
-              likesCount={postLikesCount}
-              onLike={() => handleLike(post.id)}
-              onSelectPost={() => onSelectPost(post)}
-            />
+  if (isLoading)
+    return (
+      <div aria-label="Loading posts" className="feed-skeleton">
+        {[0, 1].map((i) => (
+          <div key={i} className="post-card">
+            <Skeleton className="h-10 w-40 mb-6" />
+            <Skeleton className="h-4 w-full mb-3" />
+            <Skeleton className="h-40 w-full" />
           </div>
-        );
-      })}
+        ))}
+      </div>
+    );
+  if (isError)
+    return (
+      <div className="empty-state" role="alert">
+        <RefreshCw size={30} />
+        <h3>A little pause in the conversation.</h3>
+        <p>We couldn’t load your feed. Your posts are safe; try connecting again.</p>
+        <Button onClick={onRetry} variant="outline">
+          Try again
+        </Button>
+      </div>
+    );
+  if (!safePosts.length)
+    return (
+      <div className="empty-state">
+        <MessageCircle size={32} />
+        <h3>{emptyTitle}</h3>
+        <p>{emptyDescription}</p>
+        {onCreate && (
+          <Button onClick={onCreate}>
+            <Plus size={16} /> Share a moment
+          </Button>
+        )}
+      </div>
+    );
+  return (
+    <div className="post-list">
+      {safePosts.map((post) => (
+        <motion.div
+          key={post.id}
+          className="post-card"
+          initial={false}
+          whileInView={reduceMotion ? undefined : { y: [14, 0], opacity: [0.65, 1] }}
+          viewport={{ once: true, amount: 0.12 }}
+          transition={{ duration: 0.5, ease: [0.2, 0.75, 0.25, 1] }}
+        >
+          {post.user_id === currentUserId && (
+            <div className="post-delete">
+              <DeletePostButton postId={post.id} />
+            </div>
+          )}
+          <PostItem
+            post={post}
+            hasLiked={likesState[post.id] ?? post.has_liked}
+            likesCount={likesCount[post.id] ?? post.likes_count ?? 0}
+            likePending={pendingLikes[post.id]}
+            onLike={() => handleLike(post.id)}
+            onSelectPost={() => onSelectPost(post)}
+          />
+        </motion.div>
+      ))}
     </div>
   );
 }

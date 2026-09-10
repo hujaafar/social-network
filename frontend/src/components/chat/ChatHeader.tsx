@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import type { User } from "@/types/chat"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import type { User } from "@/types/chat";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface ChatHeaderProps {
-  user: User
+  user: User;
 }
 
 export function ChatHeader({ user }: ChatHeaderProps) {
@@ -23,5 +23,5 @@ export function ChatHeader({ user }: ChatHeaderProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

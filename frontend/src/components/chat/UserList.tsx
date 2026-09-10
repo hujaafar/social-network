@@ -1,43 +1,56 @@
 "use client";
-
+import { useState } from "react";
 import type { User } from "@/types/chat";
 import { UserItem } from "./UserItem";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-
-interface UserListProps {
+export function UserList({
+  users,
+  onSelectUser,
+  selectedUser,
+  loading,
+}: {
   users: User[];
   onSelectUser: (user: User) => void;
   selectedUser: User | null;
-}
-
-export function UserList({ users, onSelectUser, selectedUser }: UserListProps) {
+  loading?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = users.filter((user) => user.name.toLowerCase().includes(query.toLowerCase()));
   return (
-    <div className="w-80 bg-white shadow-lg rounded-l-2xl flex flex-col">
-      <div className="p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Chats</h2>
-        <div className="relative">
+    <section className="conversation-list" aria-label="Conversations">
+      <header>
+        <h2>
+          Your people<span>{users.length}</span>
+        </h2>
+        <div className="search-field">
+          <Search size={16} />
           <Input
-            placeholder="Search users..."
-            className="pl-10 bg-gray-50 border-none rounded-full"
-          />
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            size={18}
+            aria-label="Search conversations"
+            placeholder="Find someone"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+      </header>
+      <div className="conversation-contacts">
+        {loading ? (
+          <p className="inline-note p-6">Connecting to your people…</p>
+        ) : !filtered.length ? (
+          <p className="inline-note p-6">
+            {query ? "No people match your search." : "Follow people to start a conversation."}
+          </p>
+        ) : (
+          filtered.map((user) => (
+            <UserItem
+              key={user.id}
+              user={user}
+              onClick={() => onSelectUser(user)}
+              isSelected={selectedUser?.id === user.id}
+            />
+          ))
+        )}
       </div>
-      <ScrollArea className="flex-grow">
-        {users.map((user, i) => (
-          <UserItem
-            key={user.id || i}
-            user={user}
-            onClick={() => onSelectUser(user)}
-            isSelected={selectedUser?.id === user.id}
-          />
-        ))}
-      </ScrollArea>
-    </div>
+    </section>
   );
 }

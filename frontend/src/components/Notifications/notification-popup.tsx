@@ -1,32 +1,32 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { X, MessageSquare } from "lucide-react"
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, MessageSquare } from "lucide-react";
 
 interface NotificationProps {
-  message: string
-  username: string
-  onClose?: () => void
+  message: string;
+  username: string;
+  onClose?: () => void;
 }
 
 export default function NotificationPopup({ message, username, onClose }: NotificationProps) {
-  const [isVisible, setIsVisible] = useState(true)
+  const [isVisible, setIsVisible] = useState(true);
 
   const hideNotification = useCallback(() => {
-    setIsVisible(false)
+    setIsVisible(false);
     if (onClose) {
-      onClose()
+      onClose();
     }
-  }, [onClose])
+  }, [onClose]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      hideNotification()
-    }, 5000)
+      hideNotification();
+    }, 5000);
 
-    return () => clearTimeout(timer)
-  }, [hideNotification])
+    return () => clearTimeout(timer);
+  }, [hideNotification]);
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -43,7 +43,10 @@ export default function NotificationPopup({ message, username, onClose }: Notifi
                 <MessageSquare size={18} className="text-yellow-300" />
                 <h3 className="font-semibold text-lg">{username}</h3>
               </div>
-              <button onClick={hideNotification} className="text-white/70 hover:text-white transition-colors">
+              <button
+                onClick={hideNotification}
+                className="text-white/70 hover:text-white transition-colors"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -53,6 +56,5 @@ export default function NotificationPopup({ message, username, onClose }: Notifi
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }
-

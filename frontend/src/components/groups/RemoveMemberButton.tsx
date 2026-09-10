@@ -1,4 +1,5 @@
 "use client";
+import { apiUrl } from "@/lib/api";
 
 import React from "react";
 import axios from "axios";
@@ -14,18 +15,14 @@ interface RemoveMemberButtonProps {
 
 const MySwal = withReactContent(Swal);
 
-export function RemoveMemberButton({
-  groupId,
-  userId,
-  onRemove,
-}: RemoveMemberButtonProps) {
+export function RemoveMemberButton({ groupId, userId, onRemove }: RemoveMemberButtonProps) {
   const handleRemove = async () => {
     const result = await MySwal.fire({
       title: "Remove Member?",
       text: "Are you sure you want to remove this member from the group?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#6C5CE7",
+      confirmButtonColor: "#bc4312",
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, remove",
       cancelButtonText: "Cancel",
@@ -34,23 +31,20 @@ export function RemoveMemberButton({
     if (result.isConfirmed) {
       try {
         // Make a DELETE request with { group_id, user_id } in the body
-        const response = await axios.delete(
-          "http://localhost:8080/groups/remove",
-          {
-            data: {
-              group_id: groupId,
-              user_id: userId,
-            },
-            withCredentials: true,
-          }
-        );
+        const response = await axios.delete(apiUrl("/groups/remove"), {
+          data: {
+            group_id: groupId,
+            user_id: userId,
+          },
+          withCredentials: true,
+        });
 
         // Success alert
         await MySwal.fire({
           title: "Member Removed",
           text: response.data,
           icon: "success",
-          confirmButtonColor: "#6C5CE7",
+          confirmButtonColor: "#bc4312",
         });
 
         if (onRemove) onRemove();
@@ -63,14 +57,14 @@ export function RemoveMemberButton({
               title: "Forbidden",
               text: "Only the group creator can remove members.",
               icon: "error",
-              confirmButtonColor: "#6C5CE7",
+              confirmButtonColor: "#bc4312",
             });
           } else {
             await MySwal.fire({
               title: "Error",
               text: error.response?.data || "Error removing member.",
               icon: "error",
-              confirmButtonColor: "#6C5CE7",
+              confirmButtonColor: "#bc4312",
             });
           }
         } else {
@@ -79,7 +73,7 @@ export function RemoveMemberButton({
             title: "Unexpected Error",
             text: "An unexpected error occurred while removing the member.",
             icon: "error",
-            confirmButtonColor: "#6C5CE7",
+            confirmButtonColor: "#bc4312",
           });
         }
       }

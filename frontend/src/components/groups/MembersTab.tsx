@@ -8,10 +8,7 @@ interface MembersTabProps {
   isLoadingMembers: boolean;
 }
 
-export default function MembersTab({
-  members,
-  isLoadingMembers,
-}: MembersTabProps) {
+export default function MembersTab({ members, isLoadingMembers }: MembersTabProps) {
   return (
     <>
       <h3 className="text-lg font-semibold mb-4">Group Members</h3>
@@ -28,11 +25,7 @@ export default function MembersTab({
                   <p className="font-semibold">
                     {member.first_name} {member.last_name}
                   </p>
-                  {member.nickname && (
-                    <p className="text-gray-500 text-sm">
-                      @{member.nickname}
-                    </p>
-                  )}
+                  {member.nickname && <p className="text-gray-500 text-sm">@{member.nickname}</p>}
                 </div>
               </CardContent>
             </Card>

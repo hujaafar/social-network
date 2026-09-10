@@ -1,330 +1,174 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Bell, CheckCheck, Users, Check, X, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Bell, X, UserCheck, UserX } from "lucide-react";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import Cookies from "js-cookie";
-
+import { apiUrl } from "@/lib/api";
+import { useSWRConfig } from "swr";
 interface Notification {
   id: string;
-  user_id: string;
   type: string;
   content: string;
-  post_id?: string;
-  related_user_id?: string; // For follow requests, this is the requester's ID.
+  related_user_id?: string;
   group_id?: string;
-  event_id?: string;
   read: boolean;
   created_at: string;
-  SenderNickname?: string;
   sender_avatar?: string;
 }
-
-interface RightSidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-function formatTime(timestamp: string): string {
-  const time = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - time.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  if (diffSec < 60) return `${diffSec} seconds ago`;
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin} minutes ago`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs} hours ago`;
-  const diffDays = Math.floor(diffHrs / 24);
-  return `${diffDays} days ago`;
-}
-
-export function RightSidebar({ isOpen, onClose }: RightSidebarProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const currentUserId = Cookies.get("user_id");
-
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    setLoading(true);
+export function RightSidebar({ isOpen }: { isOpen: boolean; onClose: () => void }) {
+  const { mutate } = useSWRConfig();
+  const [items, setItems] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState<string | null>(null);
+  const load = useCallback(async () => {
     try {
-      const res = await fetch("http://localhost:8080/notifications/get", {
-        credentials: "include",
-      });
-      if (!res.ok) {
-       console.log("Failed to fetch notifications, status:", res.status);
-        setNotifications([]);
-        return;
-      }
-      const data = await res.json();
-      setNotifications(data ?? []);
-    } catch (error) {
-     console.log("Error fetching notifications", error);
-      setNotifications([]);
+      const response = await fetch(apiUrl("/notifications/get"), { credentials: "include" });
+      if (!response.ok) throw new Error("Could not load");
+      const data = await response.json();
+      setItems(Array.isArray(data) ? data : []);
+      setError("");
+      mutate(apiUrl("/notifications/get"), data, false);
+    } catch {
+      setError("We couldn’t load your activity. Try again in a moment.");
     } finally {
       setLoading(false);
     }
-  };
-
+  }, [mutate]);
   useEffect(() => {
-    if (!currentUserId) return;
-    fetchNotifications();
-  }, []);
-
-  // Mark a notification as read
-  const markNotificationAsRead = async (notificationId: string) => {
+    if (!isOpen) return;
+    load();
+    const timer = setInterval(load, 30000);
+    return () => clearInterval(timer);
+  }, [isOpen, load]);
+  async function request(path: string, body?: object) {
+    const res = await fetch(apiUrl(path), {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error("Request failed");
+  }
+  async function respond(item: Notification, action: "accept" | "decline") {
+    setPending(item.id);
+    setError("");
     try {
-      const res = await fetch(
-        `http://localhost:8080/notifications/read?id=${notificationId}`,
-        {
-          method: "PUT",
-          credentials: "include",
-        }
-      );
-      if (res.ok) {
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
-        );
-      }
-    } catch (error) {
-     console.log("Error marking notification as read", error);
-    }
-  };
-
-  // Handle follow request responses (for private profiles)
-  const handleFollowRequest = async (
-    notification: Notification,
-    action: "accept" | "decline",
-    e: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    e.stopPropagation();
-    try {
-      const res = await fetch("http://localhost:8080/follow/request", {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          follower_id: notification.related_user_id, // requester's ID
+      if (item.type === "follow_request")
+        await request("/follow/request", { follower_id: item.related_user_id, action });
+      else if (item.type === "group_join_request")
+        await request("/groups/join/respond", {
+          group_id: item.group_id,
+          user_id: item.related_user_id,
           action,
-        }),
-      });
-      if (res.ok) {
-        // Remove notification from list upon successful handling
-        setNotifications((prev) =>
-          prev.filter((n) => n.id !== notification.id)
-        );
-      } else {
-       console.log("Failed to handle follow request, status:", res.status);
-      }
-    } catch (error) {
-     console.log("Error handling follow request", error);
+        });
+      else await request("/groups/invite/respond", { group_id: item.group_id, action });
+      await load();
+    } catch {
+      setError("That update didn’t go through. Please try again.");
+    } finally {
+      setPending(null);
     }
-  };
-
-  // Generic handler for group join requests and invites
-  const handleGroupRequest = async (
-    notification: Notification,
-    action: "accept" | "decline",
-    e: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    e.stopPropagation();
-    let endpoint = "";
-    const payload: Record<string, unknown> = { action };
-
-    if (notification.type === "group_join_request") {
-      endpoint = "http://localhost:8080/groups/join/respond";
-      payload.group_id = notification.group_id;
-      payload.user_id = notification.related_user_id; // requester's ID
-    } else if (notification.type === "group_invite") {
-      endpoint = "http://localhost:8080/groups/invite/respond";
-      payload.group_id = notification.group_id;
-    } else {
-     console.log(
-        "Unknown notification type for group action:",
-        notification.type
+  }
+  async function markRead(id?: string) {
+    setPending(id || "all");
+    try {
+      await request(
+        id ? `/notifications/read?id=${encodeURIComponent(id)}` : "/notifications/read-all",
       );
-      return;
+      setItems((prev) =>
+        prev.map((item) => (!id || item.id === id ? { ...item, read: true } : item)),
+      );
+      mutate(apiUrl("/notifications/get"));
+    } catch {
+      setError("We couldn’t mark the notification as read.");
+    } finally {
+      setPending(null);
     }
-
-    try {
-      const res = await fetch(endpoint, {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        setNotifications((prev) =>
-          prev.filter((n) => n.id !== notification.id)
-        );
-      } else {
-       console.log("Failed to handle group request, status:", res.status);
-      }
-    } catch (error) {
-     console.log("Error handling group request", error);
-    }
-  };
-
-  // Mark all notifications as read
-  const markAllAsRead = async () => {
-    try {
-      const res = await fetch("http://localhost:8080/notifications/read-all", {
-        method: "PUT",
-        credentials: "include",
-      });
-      if (res.ok) {
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      }
-    } catch (error) {
-     console.log("Error marking all as read", error);
-    }
-  };
-
+  }
+  const unread = items.filter((item) => !item.read).length;
   return (
-    <div
-      className={`
-        fixed top-0 right-0 z-50 h-screen
-        w-80 bg-gradient-to-br from-purple-700 to-indigo-900
-        text-white p-6 flex flex-col
-        transition-transform duration-300 ease-in-out
-        ${isOpen ? "translate-x-0" : "translate-x-full"}
-        xl:translate-x-0
-      `}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Bell className="w-7 h-7" />
-          <span className="text-2xl font-semibold">Notifications</span>
+    <section className="activity-panel" aria-label="Notifications">
+      <span className="eyebrow">KEEPING YOU IN THE LOOP</span>
+      <h2>
+        Your activity<span>.</span>
+      </h2>
+      <div className="activity-toolbar">
+        <span>{unread ? `${unread} unread` : "You’re all caught up"}</span>
+        <button disabled={!unread || pending !== null} onClick={() => markRead()}>
+          <CheckCheck size={16} /> Mark all read
+        </button>
+      </div>
+      {error && (
+        <div className="inline-error" role="alert">
+          {error}
+          <button className="block underline mt-2" onClick={load}>
+            Try again
+          </button>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="xl:hidden text-white"
-          onClick={onClose}
-        >
-          <X className="w-7 h-7" />
-        </Button>
-      </div>
-
-      {/* Notifications List */}
-      <div className="flex-1 overflow-y-auto pr-2">
-        {loading ? (
-          <p className="text-center text-lg mt-10">Loading notifications...</p>
-        ) : notifications.length === 0 ? (
-          <p className="text-center text-lg mt-10">No notifications yet!</p>
-        ) : (
-          <ul className="space-y-4">
-            {notifications.map((notification) => (
-              <li
-                key={notification.id}
-                onClick={() => {
-                  if (!notification.read) {
-                    markNotificationAsRead(notification.id);
-                  }
-                }}
-                className={`
-                  flex flex-col p-4 rounded-xl shadow-md transition transform hover:scale-105 cursor-pointer
-                  ${notification.read ? "bg-white/10" : "bg-white/20"}
-                `}
-              >
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage
-                      src={
-                        notification.sender_avatar
-                          ? "http://localhost:8080/avatars/" +
-                            notification.sender_avatar
-                          : "/profile.png"
-                      }
-                      alt="Notification Avatar"
-                    />
-                  </Avatar>
-
-                  <div className="flex-1">
-                    <p
-                      className={`text-sm ${
-                        notification.read ? "opacity-80" : "font-semibold"
-                      }`}
-                    >
-                      {notification.content}
-                    </p>
-                    <span className="text-xs text-gray-200">
-                      {formatTime(notification.created_at)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Render buttons for actionable notifications */}
-                {notification.type === "group_join_request" ||
-                notification.type === "group_invite" ? (
-                  <div className="flex gap-2 mt-2">
+      )}
+      {loading ? (
+        <p className="inline-note">Checking your activity…</p>
+      ) : !items.length && !error ? (
+        <div className="empty-state">
+          <Bell size={32} />
+          <h3>Quiet, in a good way.</h3>
+          <p>Follow requests, circle invitations and event updates will appear here.</p>
+          <Link href="/groups">
+            Explore circles <ArrowUpRight size={16} />
+          </Link>
+        </div>
+      ) : (
+        <ul className="activity-list">
+          {items.map((item) => (
+            <li key={item.id} className={item.read ? "" : "unread"}>
+              <div className="activity-icon">
+                <Users size={18} />
+              </div>
+              <div className="activity-item-body">
+                <p>{item.content}</p>
+                <time dateTime={item.created_at}>
+                  {new Date(item.created_at).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </time>
+                {["follow_request", "group_join_request", "group_invite"].includes(item.type) ? (
+                  <div className="activity-item-actions">
                     <Button
-                      className="w-full border-green-400 text-green-400 hover:bg-green-500 hover:text-white flex items-center gap-1"
-                      variant="outline"
-                      onClick={(e) =>
-                        handleGroupRequest(notification, "accept", e)
-                      }
+                      size="sm"
+                      disabled={pending !== null}
+                      onClick={() => respond(item, "accept")}
                     >
-                      <UserCheck className="w-4 h-4" />
-                      Accept
+                      <Check size={15} /> Accept
                     </Button>
                     <Button
-                      className="w-full border-red-400 text-red-400 hover:bg-red-500 hover:text-white flex items-center gap-1"
+                      size="sm"
                       variant="outline"
-                      onClick={(e) =>
-                        handleGroupRequest(notification, "decline", e)
-                      }
+                      disabled={pending !== null}
+                      onClick={() => respond(item, "decline")}
                     >
-                      <UserX className="w-4 h-4" />
-                      Decline
+                      <X size={15} /> Decline
                     </Button>
                   </div>
-                ) : null}
-
-                {/* Render buttons for follow request notifications */}
-                {notification.type === "follow_request" &&
-                  currentUserId === notification.user_id && (
-                    <div className="flex gap-2 mt-2">
-                      <Button
-                        className="w-full border-green-400 text-green-400 hover:bg-green-500 hover:text-white flex items-center gap-1"
-                        variant="outline"
-                        onClick={(e) =>
-                          handleFollowRequest(notification, "accept", e)
-                        }
-                      >
-                        <UserCheck className="w-4 h-4" />
-                        Accept
-                      </Button>
-                      <Button
-                        className="w-full border-red-400 text-red-400 hover:bg-red-500 hover:text-white flex items-center gap-1"
-                        variant="outline"
-                        onClick={(e) =>
-                          handleFollowRequest(notification, "decline", e)
-                        }
-                      >
-                        <UserX className="w-4 h-4" />
-                        Decline
-                      </Button>
-                    </div>
-                  )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="mt-6 pt-4 border-t border-white/20">
-        <Button
-          variant="outline"
-          className="w-full border-white/30 text-white bg-teal-500 hover:bg-teal-600"
-          onClick={markAllAsRead}
-        >
-          Mark all as read
-        </Button>
-      </div>
-    </div>
+                ) : (
+                  !item.read && (
+                    <button
+                      className="mark-read"
+                      disabled={pending !== null}
+                      onClick={() => markRead(item.id)}
+                    >
+                      Mark as read
+                    </button>
+                  )
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
