@@ -12,5 +12,6 @@ export interface Post {
   selectedUsers?: string[];
   nickname?: string;
   has_liked: boolean;
+  is_saved?: boolean;
   avatar?: string;
 }
