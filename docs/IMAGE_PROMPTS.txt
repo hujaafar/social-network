@@ -1,0 +1,19 @@
+Asset 1
+Use case: photorealistic-natural
+Asset type: wide community cover and login image for a professional social network redesign.
+Primary request: A wide 16:9 cinematic candid editorial photograph of a small diverse group of adult creative friends gathered around a table in a sunlit modernist studio, reviewing prints. Include plants, amber glass, a subtle cobalt detail, and relaxed authentic gestures that express real social connections.
+Style/medium: contemporary editorial photography, natural human texture, subtle photographic grain.
+Composition/framing: wide horizontal 16:9, useful for a cropped full-width community cover and login image.
+Lighting/mood: natural daylight, inviting and unposed.
+Color palette: warm ivory, burnt orange, deep ink, with a cobalt accent.
+Constraints: no text, logos, watermark, or interface.
+
+Asset 2
+Use case: product-mockup
+Asset type: portrait decorative editorial discovery card for a professional social network.
+Primary request: A portrait 4:5 editorial still life of an unbranded chrome and burnt-orange over-ear headphone set beside a vintage small silver camera and a stack of off-white art publications on a cobalt blue plinth.
+Style/medium: contemporary editorial photography, tactile surfaces and subtle photographic grain.
+Composition/framing: vertical 4:5, strong diagonal depth.
+Lighting/mood: natural late-afternoon daylight with hard shadows.
+Color palette: chrome, burnt orange, warm off-white, cobalt blue and deep ink shadows.
+Constraints: no readable text, logos, watermark, or interface.

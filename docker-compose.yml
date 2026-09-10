@@ -1,29 +1,26 @@
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
-      - DATABASE_URL=your_database_url
-      - MIGRATIONS_PATH=file:///app/db/migrations
-    networks:
-      - social-network
-
+      DATABASE_PATH: /app/data/common.db
+      MIGRATIONS_PATH: file:///app/db/migrations
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+    volumes:
+      - common-data:/app/data
+      - common-uploads:/app/uploads
+      - common-avatars:/app/avatars
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
     ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8080
+      - "127.0.0.1:3000:3000"
     depends_on:
       - backend
-    networks:
-      - social-network
-
-networks:
-  social-network:
-    driver: bridge
+volumes:
+  common-data:
+  common-uploads:
+  common-avatars:

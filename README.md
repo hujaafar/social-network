@@ -1,170 +1,89 @@
-# Fakebook Project
+# Common
 
-A Facebook-like social network built with Go (backend) and Next.js (frontend), featuring authentication, real-time communication, group management, notifications, and more.
+**A place for your people.**
 
-## Features
+A full-stack social network with an editorial interface, original community photography and scroll-linked motion. Built with **Next.js, React, Go and SQLite**.
 
-### Authentication
+![Original Common community campaign photograph](frontend/public/images/common-studio.webp)
 
-- User registration with validation:
-  - Required: Email, Password, First Name, Last Name, Date of Birth
-  - Optional: Avatar, Nickname, About Me
-- Secure password hashing using bcrypt
-- Session-based authentication with cookies
-- Persistent login state
-- Logout and session management
+## The experience
 
-### Profile Management
+- **Your feed:** publish moments, attach JPEG/PNG/GIF images, react and join the conversation.
+- **Your audience:** public posts, followers-only posts and selected-follower posts; public or private profiles.
+- **Your circles:** discover groups, request membership, invite people, share posts and organize events.
+- **Your conversations:** live messages, emoji, searchable contacts, mobile conversation navigation and delivery acknowledgements.
+- **Your activity:** follow requests, circle invitations and event notifications, accessible throughout the app.
 
-- Public and private profile settings
-- Profile information display (user details, activity, followers, and following list)
-- Option to follow/unfollow users
-- Follow request system for private profiles
+The Common redesign carries the photographic depth and editorial typography of the Nexora reference into an everyday social application. Images shift and open as you scroll, posts enter gently, and a reading-progress line follows the page. Reduced-motion preferences are respected.
 
-### Posts & Comments
+## Run locally
 
-- Create posts with privacy options:
-  - Public (visible to all users)
-  - Almost Private (visible to followers only)
-  - Private (visible to selected followers)
-- Attach images/GIFs to posts and comments
-- Comment system with image support
-- Like/unlike functionality
+Requirements: Node.js 22+, Go 1.22+ and npm. Docker is optional.
 
-### Groups & Events
-
-- Create groups with title and description
-- Invite/request to join system for groups
-- Group posts and comments (visible only to members)
-- Group chat with real-time messaging
-- Event creation inside groups with RSVP system ("Going" / "Not Going")
-
-### Real-time Features
-
-- Private messaging via WebSockets
-- Group chat system
-- User online status tracking
-- Read receipt for messages
-- Emoji support in chat
-
-### Notifications
-
-- Follow request alerts
-- Group invitation notifications
-- New event creation alerts
-- Message notifications
-- Real-time updates using WebSockets
-
-## Technical Stack
-
-### Frontend (Next.js)
-
-- TypeScript for type safety
-- Tailwind CSS for styling
-- Component-based structure
-- WebSocket client implementation for real-time interactions
-- Responsive design
-
-### Backend (Go)
-
-- Custom web server using Go
-- SQLite database with migration system
-- WebSockets for real-time communication
-- Secure authentication with bcrypt and session cookies
-- RESTful API for frontend integration
-
-### Database (SQLite)
-
-- User authentication and profile management
-- Posts, comments, likes, and follower relationships
-- Groups and event tracking
-- Messaging and notifications
-- Online status tracking
-
-## Project Structure
-
-```
-social-network/
-├── frontend/                 # Frontend application (Next.js)
-│   ├── src/
-│   │   ├── app/           # App pages (chat, groups, login, notifications, profile, register, settings)
-│   │   ├── components/    # Reusable UI components
-│   │   ├── lib/           # Utility functions and API hooks
-│   │   ├── types/         # Type definitions for frontend models
-│   │   └── middleware.ts  # Middleware for authentication
-│   ├── public/            # Static assets
-│   └── package.json       # Project dependencies
-│
-├── backend/               # Backend application (Go)
-│   ├── app/
-│   │   ├── auth/          # Authentication and session management
-│   │   ├── chat/          # Private and group chat functionality
-│   │   ├── comments/      # Comment system
-│   │   ├── db/            # Database management
-│   │   ├── events/        # Group events and RSVP management
-│   │   ├── followers/     # Follow/unfollow system
-│   │   ├── groups/        # Group management and invitations
-│   │   ├── likes/         # Like/unlike functionality
-│   │   ├── notifications/ # Notification system
-│   │   ├── posts/         # Posts and media handling
-│   │   ├── search/        # User and post search functionality
-│   │   ├── sessions/      # Session and authentication middleware
-│   │   └── users/         # Profile and privacy management
-│   ├── avatars/           # Avatar uploads
-│   ├── server/
-│   │   ├── middleware.go  # Server middleware handlers
-│   │   └── server.go      # Main server file
-│   ├── uploads/           # File uploads storage
-│   ├── Dockerfile         # Docker containerization
-│   ├── main.go            # Application entry point
-│   ├── social_network.db  # SQLite database
-│   └── go.mod             # Go dependencies
-│
-├── docker-compose.yml      # Docker configuration for frontend and backend
-└── README.md               # Project documentation
+```sh
+git clone https://github.com/hujaafar/social-network.git
+cd social-network
+# Select feat/common-social-redesign while the redesign is under review.
+git checkout feat/common-social-redesign
 ```
 
-## Getting Started
+Start the API in one terminal:
 
-### Prerequisites
-
-- Go 1.22+
-- Node.js 18+
-- SQLite
-- Docker and Docker Compose
-
-### Setup and Run
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://learn.reboot01.com/git/malasfoor/social-network
-   cd social-network
-   ```
-
-2. Start the backend:
-
-   ```bash
-   cd backend
-   go run main.go
-   ```
-
-3. Start the frontend:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-### Docker Setup
-
-To build and run using Docker Compose:
-
-```bash
-docker-compose up --build
+```sh
+cd backend
+go run .
 ```
 
-## **Authors**
+Start the frontend in another:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Open **http://localhost:3000** and create an account. The browser talks to **http://localhost:8080** by default. Account names and passwords used in automated tests are temporary fixtures, not seeded application accounts.
+
+For a different API host, set `NEXT_PUBLIC_API_URL` in `frontend/.env.local` **before building**. Set `FRONTEND_ORIGIN` on the Go server to the exact frontend origin. Set `PORT` and `DATABASE_PATH` to use a separate port and database. `MIGRATIONS_PATH` defaults to `file://app/db/migrations` when starting inside `backend/`.
+
+## Docker
+
+```sh
+docker compose up --build
+```
+
+The frontend and backend have separate images. Named volumes persist the database, uploaded media and avatars. Published ports bind to localhost. The public API URL is a frontend **build argument**; the browser must be able to reach that URL. Internal Docker service names are not browser addresses.
+
+## Checks
+
+```sh
+cd frontend
+npm run lint
+npm run build
+cd ../backend
+go test ./... -count=1
+go vet ./...
+```
+
+The integration test uses a temporary database and temporary upload directory. It exercises registration, sessions, failed login, following, posts and PNG media, likes, comments, private post visibility, circle membership, notifications, events, RSVP and live chat delivery. CI runs the frontend and backend checks separately.
+
+## Architecture
+
+| Area | Location |
+|---|---|
+| App routes and shared theme | `frontend/src/app` |
+| Editorial imagery and application shell | `frontend/src/components/design` |
+| API origin and WebSocket URL configuration | `frontend/src/lib/api.ts` |
+| Feed, circles, profile and chat components | `frontend/src/components` |
+| HTTP routing and integration journeys | `backend/server` |
+| Go application handlers | `backend/app` |
+| SQLite migrations | `backend/app/db/migrations` |
+
+[Design and motion notes](docs/REDESIGN.md) · [Validation and limitations](docs/VALIDATION.md) · [Original image prompts](docs/IMAGE_PROMPTS.txt)
+
+## Authors
+
+Original project contributors remain credited:
 
 - [Ali Hasan](https://github.com/AliHJMM)
 - [Habib Mansoor](https://github.com/7abib04)
